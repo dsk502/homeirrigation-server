@@ -1,4 +1,4 @@
-#include "headers/sqlite_database_helper.h"
+#include "include/database/sqlite_database_helper.hpp"
 
 SQLiteDatabaseHelper::SQLiteDatabaseHelper(std::string dbPath) {
     this->dbPath = dbPath.c_str();

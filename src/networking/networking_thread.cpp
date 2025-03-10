@@ -3,6 +3,7 @@
 #include <arpa/inet.h>
 #include <unistd.h>
 #include <cstring>
+#include "include/networking/networking_thread.hpp"
 
 void server_func() {
     int server_fd, new_socket;
