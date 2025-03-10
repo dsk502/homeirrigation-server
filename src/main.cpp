@@ -2,6 +2,7 @@
 #include <string>
 #include <thread>
 #include <sqlite3.h>
+#include "headers/listen_thread.h"
 
 using namespace std;
 
@@ -44,11 +45,16 @@ int main() {
             if(nRow >= 2) {
                 //If there are two or more rows
                 fprintf(stderr, "Server Error: There are more than one records in the table server_info");
-            } else if(nRow == 1 && 1) {
+            } else if(nRow == 1 && pResult[nCol + 1] == "1") {
                 //If there is one record and is_added == 1, then it means that this server is added by a client.
-                
+                //is_added data is in pResult[nCol + 1]
+                //Start a thread to listen to the requests from the client
+                thread server_thread = thread(server_func, 1);
+                server_thread.join();
             } else if(nRow == 0) {
-
+                //If the server is not added by a client, start a thread to listen the addition request
+                thread server_thread = thread(server_func, 0);
+                server_thread.join();
             } else {
                 fprintf(stderr, "Server Error");
             }

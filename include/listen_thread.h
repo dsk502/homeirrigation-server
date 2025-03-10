@@ -1,0 +1,1 @@
+void server_func(int is_added, int listeningPort);
