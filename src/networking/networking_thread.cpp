@@ -2,15 +2,106 @@
 #include <sys/socket.h>
 #include <arpa/inet.h>
 #include <unistd.h>
-#include <cstring>
+#include <sstream>
+#include <string>
 #include "include/networking/networking_thread.hpp"
 
+using namespace std;
+//Char array copy method similar to Java's System.arraycopy()
+
+void char_array_copy(const char* src, int src_pos, char* dest, int dest_pos, int len) {
+    for(int i = dest_pos; i < dest_pos + len; i++) {
+        dest[i] = src[i + src_pos - dest_pos];
+    }
+}
+
+//Find the index of a character in a char array
+
+int find_char_index(char* char_array, int char_array_len, char ch) {
+    for(int i = 0; i < char_array_len; i++) {
+        if(char_array[i] == ch) {
+            return i;
+        }
+    }
+    return -1;
+}
+
+string unpack_unencrypted_message(char* receive_buffer, int receive_len) {
+    int end_tag_index = find_char_index(receive_buffer, receive_len, '\n');
+    if(end_tag_index == -1) {
+        return "";
+    }
+
+    char* message_block = new char[end_tag_index];
+    char_array_copy(receive_buffer, 0, message_block, 1, end_tag_index);
+    string unpacked_message = string(message_block, end_tag_index);
+    return unpacked_message;
+}
+
+char* pack_message(string message, bool is_encrypted, int* packed_bytes_len_ret) {
+    int packed_bytes_len = message.length() + 2;
+    char* packed_bytes = new char[packed_bytes_len];
+    if(is_encrypted) {
+        //string encrypted_message = 
+        //char_array_copy(encrypted_message.c_str(), 0, packed_bytes, 1, encrypted_message.length());
+        packed_bytes[0] = (char)0x02;
+    } else {
+        packed_bytes[0] = (char)0x01;
+        char_array_copy(message.c_str(), 0, packed_bytes, 1, message.length());
+    }
+    packed_bytes[packed_bytes_len - 1] = '\n';
+    *packed_bytes_len_ret = packed_bytes_len;
+    return packed_bytes;
+}
+
+string extract_command(string message_pt) {
+    std::string result;
+
+    // 查找 '(' 的位置
+    size_t pos = message_pt.find('(');
+
+    if (pos != std::string::npos) {
+        // 如果找到了 '('，提取从开头到 '(' 之前的部分
+        result = message_pt.substr(0, pos);
+    } else {
+        // 如果没有找到 '('，提取整个字符串
+        result = "";
+    }
+    return result;
+}
+
+vector<string> extract_params(string message_pt) {
+    std::vector<std::string> params;
+
+    // 查找 '(' 和 ')' 的位置
+    size_t startPos = message_pt.find('(');
+    size_t endPos = message_pt.find(')');
+
+    // 检查是否找到了括号
+    if (startPos != std::string::npos && endPos != std::string::npos && startPos < endPos) {
+        // 提取括号之间的内容
+        std::string content_between_braces = message_pt.substr(startPos + 1, endPos - startPos - 1);
+
+        // 使用 stringstream 按逗号分割
+        std::stringstream ss(content_between_braces);
+        
+        std::string item;
+
+        while (std::getline(ss, item, ',')) {
+            params.push_back(item);
+        }
+    }
+    return params;
+}
+
 void server_func() {
-    int server_fd, new_socket;
+    string server_id;
+
+    int server_fd, client_socket;
     struct sockaddr_in address;
     int addrlen = sizeof(address);
-    char buffer[1024] = {0};
-    const char* response = "Hello from server";
+    char receive_buffer[1024] = {0};
+    //const char* response = "Hello from server";
 
     // 创建TCP套接字
     if ((server_fd = socket(AF_INET, SOCK_STREAM, 0)) == 0) {
@@ -38,7 +129,7 @@ void server_func() {
     std::cout << "Server listening on port 8080..." << std::endl;
 
     // 接受客户端连接
-    if ((new_socket = accept(server_fd, (struct sockaddr*)&address, (socklen_t*)&addrlen)) < 0) {
+    if ((client_socket = accept(server_fd, (struct sockaddr*)&address, (socklen_t*)&addrlen)) < 0) {
         perror("accept");
         exit(EXIT_FAILURE);
     }
@@ -47,23 +138,68 @@ void server_func() {
 
     // 循环接收和发送消息
     while (true) {
-        memset(buffer, 0, sizeof(buffer));  // 清空缓冲区
-        int valread = read(new_socket, buffer, 1024);   //The data from client will be in buffer
-        if (valread <= 0) {
+        memset(receive_buffer, 0, sizeof(receive_buffer));  // 清空缓冲区
+        int receive_len = read(client_socket, receive_buffer, 1024);   //The data from client will be in buffer
+        if (receive_len <= 0) {
             std::cout << "Client disconnected." << std::endl;
             break;  // 客户端断开连接
         }
+
         //Process the data from buffer
-        std::cout << "Message from client: " << buffer << std::endl;
+        if(receive_buffer[0] == (char)0x01) {   //Encrypted message
+
+        } else if(receive_buffer[0] == (char)0x02) {    //Unencrypted message
+            string received_message = unpack_unencrypted_message(receive_buffer, receive_len);
+            string command = extract_command(received_message);
+
+            if(command == "add_device") {
+                //If the command is "add_device"
+                vector<string> params = extract_params(received_message);
+                if(params.size() != 1) {
+                    //Error: invalid argument list
+                }
+                string timestamp = params[0];   //Store the timestamp
+
+                //Reply "key_exchange_server(server_id)"
+                string sending_message = "key_exchange_server(" + server_id + ")";
+                int sending_bytes_len;
+                char* sending_bytes = pack_message(sending_message, false, &sending_bytes_len);
+                send(client_socket, sending_bytes, sending_bytes_len);
+
+                //Receive "key_exchange_client(client_pubkey)"
+                memset(receive_buffer, 0, sizeof(receive_buffer));
+                receive_len = read(client_socket, receive_buffer, 1024);
+                if(receive_buffer[0] == (char)0x01) {
+                    //Error: invalid message
+                }
+                received_message = unpack_unencrypted_message(receive_buffer, receive_len);
+                command = extract_command(received_message);
+                if(command != "key_exchange_client") {
+                    //Error: message sequence error
+                }
+                params = extract_params(received_message);
+                if(params.size() != 1) {
+                    //Error: invalid argument list
+                }
+                string client_pubkey = params[0];
+
+                //Reply "request_add_param(server_id)"
+            } else {
+                //Error: invalid message
+            }
+        } else {
+            //Error: invalid message
+        }
 
         // 向客户端发送响应
-        send(new_socket, response, strlen(response), 0);
+        //send(client_socket, response, strlen(response), 0);
         std::cout << "Response sent to client." << std::endl;
     }
 
     // 关闭套接字
-    close(new_socket);
+    close(client_socket);
     close(server_fd);
 
     return;
 }
+

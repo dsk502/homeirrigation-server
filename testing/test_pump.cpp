@@ -14,12 +14,12 @@ int main() {
 
     //Control the pump
     gpioWrite(pin, PI_ON);  //Set the pin to high voltage 
-    gpioDelay(500000 * 10);      //Wait 500ms*10=5s. The high voltage will be there for 5s.
+    gpioDelay(500000 * 10); //Wait 500ms*10=5s. The high voltage will be there for 5s.
     gpioWrite(pin, PI_OFF); //Set the pin to low voltage
     gpioDelay(500000);      //Wait 500ms
 
 
-    // 清理并退出
+    //Clean and exit
     gpioTerminate();
     return 0;
 }
