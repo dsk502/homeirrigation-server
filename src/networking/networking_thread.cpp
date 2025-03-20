@@ -7,6 +7,8 @@
 #include "include/networking/networking_thread.hpp"
 
 using namespace std;
+
+string server_prikey;
 //Char array copy method similar to Java's System.arraycopy()
 
 void char_array_copy(const char* src, int src_pos, char* dest, int dest_pos, int len) {
@@ -36,6 +38,13 @@ string unpack_unencrypted_message(char* receive_buffer, int receive_len) {
     char_array_copy(receive_buffer, 0, message_block, 1, end_tag_index);
     string unpacked_message = string(message_block, end_tag_index);
     return unpacked_message;
+}
+
+string unpack_encrypted_message(char* receive_buffer, int receive_len, string key) {
+    string message_cipher = unpack_unencrypted_message(receive_buffer, receive_len);
+    //string message_pt = decrypt(message_cipher, key);
+    string message_pt = "";
+    return message_pt;
 }
 
 char* pack_message(string message, bool is_encrypted, int* packed_bytes_len_ret) {
@@ -150,9 +159,9 @@ void server_func() {
 
         } else if(receive_buffer[0] == (char)0x02) {    //Unencrypted message
             string received_message = unpack_unencrypted_message(receive_buffer, receive_len);
-            string command = extract_command(received_message);
+            string recv_command = extract_command(received_message);
 
-            if(command == "add_device") {
+            if(recv_command == "add_device") {
                 //If the command is "add_device"
                 vector<string> params = extract_params(received_message);
                 if(params.size() != 1) {
@@ -164,7 +173,7 @@ void server_func() {
                 string sending_message = "key_exchange_server(" + server_id + ")";
                 int sending_bytes_len;
                 char* sending_bytes = pack_message(sending_message, false, &sending_bytes_len);
-                send(client_socket, sending_bytes, sending_bytes_len);
+                send(client_socket, sending_bytes, sending_bytes_len, 0);
 
                 //Receive "key_exchange_client(client_pubkey)"
                 memset(receive_buffer, 0, sizeof(receive_buffer));
@@ -173,8 +182,8 @@ void server_func() {
                     //Error: invalid message
                 }
                 received_message = unpack_unencrypted_message(receive_buffer, receive_len);
-                command = extract_command(received_message);
-                if(command != "key_exchange_client") {
+                recv_command = extract_command(received_message);
+                if(recv_command != "key_exchange_client") {
                     //Error: message sequence error
                 }
                 params = extract_params(received_message);
@@ -184,6 +193,55 @@ void server_func() {
                 string client_pubkey = params[0];
 
                 //Reply "request_add_param(server_id)"
+                sending_message = "request_add_param(" + server_id + ")";        
+                sending_bytes = pack_message(sending_message, true, &sending_bytes_len);
+                send(client_socket, sending_bytes, sending_bytes_len, 0);
+
+                //Receive "reply_add_param(mode, water_amount, scheduled_freq, scheduled_time)"
+                memset(receive_buffer, 0, sizeof(receive_buffer));
+                receive_len = read(client_socket, receive_buffer, 1024);
+                if(receive_buffer[0] != (char)0x02) {
+                    //Error: invalid message
+                }
+                received_message = unpack_encrypted_message(receive_buffer, receive_len, server_prikey);
+                recv_command = extract_command(received_message);
+                
+                if(recv_command != "reply_add_param") {
+                    //Error: invalid message
+                }
+                params = extract_params(received_message);
+                if(params.size() != 4) {
+                    //Error: invalid argument list
+                }
+                string mode = params[0];
+                string water_amount = params[1];
+                string scheduled_freq = params[2];
+                string scheduled_time = params[3];
+
+                //Store the data to the database
+
+
+                //Reply "finish_add_server()"
+                sending_message = "finish_add_server()";
+                sending_bytes = pack_message(sending_message, true, &sending_bytes_len);
+                send(client_socket, sending_bytes, sending_bytes_len, 0);
+
+                //Receive "finish_add_client()"
+                memset(receive_buffer, 0, sizeof(receive_buffer));
+                receive_len = read(client_socket, receive_buffer, 1024);
+                if(receive_buffer[0] != (char)0x02) {
+                    //Error: invalid message
+                }
+                received_message = unpack_encrypted_message(receive_buffer, receive_len, server_prikey);
+                recv_command = extract_command(received_message);
+                
+                if(recv_command != "finish_add_client") {
+                    //Error: invalid message
+                }
+
+                //Start pump control thread
+                
+
             } else {
                 //Error: invalid message
             }
