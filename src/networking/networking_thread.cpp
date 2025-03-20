@@ -6,9 +6,12 @@
 #include <string>
 #include "include/networking/networking_thread.hpp"
 
-using namespace std;
+#define ENCRYPTED_TAG (char)0x02
+#define UNENCRYPTED_TAG (char)0x01
 
-string server_prikey;
+//using namespace std;
+
+std::string server_prikey;
 //Char array copy method similar to Java's System.arraycopy()
 
 void char_array_copy(const char* src, int src_pos, char* dest, int dest_pos, int len) {
@@ -28,7 +31,7 @@ int find_char_index(char* char_array, int char_array_len, char ch) {
     return -1;
 }
 
-string unpack_unencrypted_message(char* receive_buffer, int receive_len) {
+std::string unpack_unencrypted_message(char* receive_buffer, int receive_len) {
     int end_tag_index = find_char_index(receive_buffer, receive_len, '\n');
     if(end_tag_index == -1) {
         return "";
@@ -36,18 +39,18 @@ string unpack_unencrypted_message(char* receive_buffer, int receive_len) {
 
     char* message_block = new char[end_tag_index];
     char_array_copy(receive_buffer, 0, message_block, 1, end_tag_index);
-    string unpacked_message = string(message_block, end_tag_index);
+    std::string unpacked_message = std::string(message_block, end_tag_index);
     return unpacked_message;
 }
 
-string unpack_encrypted_message(char* receive_buffer, int receive_len, string key) {
-    string message_cipher = unpack_unencrypted_message(receive_buffer, receive_len);
+std::string unpack_encrypted_message(char* receive_buffer, int receive_len, std::string key) {
+    std::string message_cipher = unpack_unencrypted_message(receive_buffer, receive_len);
     //string message_pt = decrypt(message_cipher, key);
-    string message_pt = "";
+    std::string message_pt = "";
     return message_pt;
 }
 
-char* pack_message(string message, bool is_encrypted, int* packed_bytes_len_ret) {
+char* pack_message(std::string message, bool is_encrypted, int* packed_bytes_len_ret) {
     int packed_bytes_len = message.length() + 2;
     char* packed_bytes = new char[packed_bytes_len];
     if(is_encrypted) {
@@ -63,7 +66,7 @@ char* pack_message(string message, bool is_encrypted, int* packed_bytes_len_ret)
     return packed_bytes;
 }
 
-string extract_command(string message_pt) {
+std::string extract_command(std::string message_pt) {
     std::string result;
 
     // 查找 '(' 的位置
@@ -79,7 +82,7 @@ string extract_command(string message_pt) {
     return result;
 }
 
-vector<string> extract_params(string message_pt) {
+std::vector<std::string> extract_params(std::string message_pt) {
     std::vector<std::string> params;
 
     // 查找 '(' 和 ')' 的位置
@@ -104,7 +107,7 @@ vector<string> extract_params(string message_pt) {
 }
 
 void server_func() {
-    string server_id;
+    std::string server_id;
 
     int server_fd, client_socket;
     struct sockaddr_in address;
@@ -155,22 +158,22 @@ void server_func() {
         }
 
         //Process the data from buffer
-        if(receive_buffer[0] == (char)0x01) {   //Encrypted message
+        if(receive_buffer[0] == (char)0x02) {   //Encrypted message
 
-        } else if(receive_buffer[0] == (char)0x02) {    //Unencrypted message
-            string received_message = unpack_unencrypted_message(receive_buffer, receive_len);
-            string recv_command = extract_command(received_message);
+        } else if(receive_buffer[0] == (char)0x01) {    //Unencrypted message
+            std::string received_message = unpack_unencrypted_message(receive_buffer, receive_len);
+            std::string recv_command = extract_command(received_message);
 
             if(recv_command == "add_device") {
                 //If the command is "add_device"
-                vector<string> params = extract_params(received_message);
+                std::vector<std::string> params = extract_params(received_message);
                 if(params.size() != 1) {
                     //Error: invalid argument list
                 }
-                string timestamp = params[0];   //Store the timestamp
+                std::string timestamp = params[0];   //Store the timestamp
 
                 //Reply "key_exchange_server(server_id)"
-                string sending_message = "key_exchange_server(" + server_id + ")";
+                std::string sending_message = "key_exchange_server(" + server_id + ")";
                 int sending_bytes_len;
                 char* sending_bytes = pack_message(sending_message, false, &sending_bytes_len);
                 send(client_socket, sending_bytes, sending_bytes_len, 0);
@@ -190,7 +193,7 @@ void server_func() {
                 if(params.size() != 1) {
                     //Error: invalid argument list
                 }
-                string client_pubkey = params[0];
+                std::string client_pubkey = params[0];
 
                 //Reply "request_add_param(server_id)"
                 sending_message = "request_add_param(" + server_id + ")";        
@@ -213,10 +216,10 @@ void server_func() {
                 if(params.size() != 4) {
                     //Error: invalid argument list
                 }
-                string mode = params[0];
-                string water_amount = params[1];
-                string scheduled_freq = params[2];
-                string scheduled_time = params[3];
+                std::string mode = params[0];
+                std::string water_amount = params[1];
+                std::string scheduled_freq = params[2];
+                std::string scheduled_time = params[3];
 
                 //Store the data to the database
 
@@ -240,7 +243,7 @@ void server_func() {
                 }
 
                 //Start pump control thread
-                
+
 
             } else {
                 //Error: invalid message

@@ -1,1 +1,0 @@
-void char_array_copy(char* src, int src_pos, char* dest, int dest_pos, int len);
