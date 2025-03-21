@@ -2,10 +2,18 @@
 #include <string>
 #include <thread>
 #include <sqlite3.h>
-#include "headers/listen_thread.h"
+#include <pigpio.h>
+#include "../include/networking/networking_thread.hpp"
 
-using namespace std;
+//using namespace std;
 
+int init() {
+    if (gpioInitialise() < 0) {
+        std::cerr << "Failed to initialise pigpio library" << std::endl;
+        return 1;
+    }
+    return 0;
+}
 static int callback(void *para, int argc, char **argv, char **azColName){
     int i;
     for(i=0; i<argc; i++){
@@ -27,7 +35,7 @@ int main() {
         //Create server_info table if it is the first run
         char* errmsg = 0;
 
-        string createServerInfoSql = "CREATE TABLE IF NOT EXISTS server_info ("
+        std::string createServerInfoSql = "CREATE TABLE IF NOT EXISTS server_info ("
             "server_id TEXT PRIMARY KEY, is_added INTEGER, client_add_time INTEGER, "
             "mode INTEGER, water_amount REAL, automatic_humidity REAL, "
             "scheduled_freq INTEGER, scheduled_time TEXT"
@@ -49,11 +57,11 @@ int main() {
                 //If there is one record and is_added == 1, then it means that this server is added by a client.
                 //is_added data is in pResult[nCol + 1]
                 //Start a thread to listen to the requests from the client
-                thread server_thread = thread(server_func, 1);
+                std::thread server_thread = std::thread(server_func, 1);
                 server_thread.join();
             } else if(nRow == 0) {
                 //If the server is not added by a client, start a thread to listen the addition request
-                thread server_thread = thread(server_func, 0);
+                std::thread server_thread = std::thread(server_func, 0);
                 server_thread.join();
             } else {
                 fprintf(stderr, "Server Error");

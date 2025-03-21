@@ -9,8 +9,6 @@
 #define ENCRYPTED_TAG (char)0x02
 #define UNENCRYPTED_TAG (char)0x01
 
-//using namespace std;
-
 std::string server_prikey;
 //Char array copy method similar to Java's System.arraycopy()
 
@@ -140,16 +138,17 @@ void server_func() {
 
     std::cout << "Server listening on port 8080..." << std::endl;
 
-    // 接受客户端连接
-    if ((client_socket = accept(server_fd, (struct sockaddr*)&address, (socklen_t*)&addrlen)) < 0) {
-        perror("accept");
-        exit(EXIT_FAILURE);
-    }
+    while(true) {
+        // 接受客户端连接
+        if ((client_socket = accept(server_fd, (struct sockaddr*)&address, (socklen_t*)&addrlen)) < 0) {
+            perror("accept");
+            exit(EXIT_FAILURE);
+        }
 
-    std::cout << "Client connected." << std::endl;
+        std::cout << "Client connected." << std::endl;
 
-    // 循环接收和发送消息
-    while (true) {
+        // 循环接收和发送消息
+        //while (true) {
         memset(receive_buffer, 0, sizeof(receive_buffer));  // 清空缓冲区
         int receive_len = read(client_socket, receive_buffer, 1024);   //The data from client will be in buffer
         if (receive_len <= 0) {
@@ -159,11 +158,27 @@ void server_func() {
 
         //Process the data from buffer
         if(receive_buffer[0] == (char)0x02) {   //Encrypted message
+           
+            std::string received_message = unpack_unencrypted_message(receive_buffer, receive_len);
+            std::string recv_command = extract_command(received_message);
+            //Begin delete device
+            if(recv_command == "delete_device") {
+
+            } else if(recv_command == "edit_mode") {
+
+            } else if(recv_command == "edit_water_amount") {
+
+            } else if(recv_command == "edit_soilmoisture_time") {
+
+            } else {
+                //Error: invalid message
+            }
 
         } else if(receive_buffer[0] == (char)0x01) {    //Unencrypted message
             std::string received_message = unpack_unencrypted_message(receive_buffer, receive_len);
             std::string recv_command = extract_command(received_message);
 
+            //Begin add device
             if(recv_command == "add_device") {
                 //If the command is "add_device"
                 std::vector<std::string> params = extract_params(received_message);
@@ -244,7 +259,7 @@ void server_func() {
 
                 //Start pump control thread
 
-
+            //End add device
             } else {
                 //Error: invalid message
             }
@@ -254,7 +269,7 @@ void server_func() {
 
         // 向客户端发送响应
         //send(client_socket, response, strlen(response), 0);
-        std::cout << "Response sent to client." << std::endl;
+        //std::cout << "Response sent to client." << std::endl;
     }
 
     // 关闭套接字
