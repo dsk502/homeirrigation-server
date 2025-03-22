@@ -4,7 +4,7 @@
 #include <unistd.h>
 #include <sstream>
 #include <string>
-#include "include/networking/networking_thread.hpp"
+#include "networking/networking_thread.hpp"
 
 #define ENCRYPTED_TAG (char)0x02
 #define UNENCRYPTED_TAG (char)0x01
@@ -270,10 +270,11 @@ void server_func() {
         // 向客户端发送响应
         //send(client_socket, response, strlen(response), 0);
         //std::cout << "Response sent to client." << std::endl;
+        close(client_socket);
     }
 
     // 关闭套接字
-    close(client_socket);
+    
     close(server_fd);
 
     return;

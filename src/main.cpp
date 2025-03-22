@@ -7,13 +7,6 @@
 
 //using namespace std;
 
-int init() {
-    if (gpioInitialise() < 0) {
-        std::cerr << "Failed to initialise pigpio library" << std::endl;
-        return 1;
-    }
-    return 0;
-}
 static int callback(void *para, int argc, char **argv, char **azColName){
     int i;
     for(i=0; i<argc; i++){

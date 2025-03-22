@@ -1,4 +1,4 @@
-#include "include/hardware_control/adc_hardware.hpp"
+#include "hardware_control/adc_hardware.hpp"
 
 int ADCCommon::init_gpio() {
 

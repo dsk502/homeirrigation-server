@@ -1,11 +1,5 @@
-#include <iostream>
-#include <fstream>
-#include <openssl/rsa.h>
-#include <openssl/err.h>
-#include <openssl/evp.h>
-#include <openssl/bio.h>
-#include <vector>
-#include <string>
+
+#include "crypto/rsa_utils.hpp"
 
 // 打印OpenSSL错误信息
 void print_openssl_error()
@@ -14,7 +8,7 @@ void print_openssl_error()
 }
 
 // Base64解码函数
-std::vector<unsigned char> base64_decode(const std::string& base64_data)
+std::vector<unsigned char> RSAUtils::base64_decode(const std::string& base64_data)
 {
     BIO* bio = BIO_new_mem_buf(base64_data.c_str(), -1);
     BIO* b64 = BIO_new(BIO_f_base64());
@@ -38,7 +32,7 @@ std::vector<unsigned char> base64_decode(const std::string& base64_data)
 }
 
 // Base64编码函数
-std::string base64_encode(const unsigned char* data, size_t length)
+std::string RSAUtils::base64_encode(const unsigned char* data, size_t length)
 {
     BIO* bio = BIO_new(BIO_s_mem());
     BIO* b64 = BIO_new(BIO_f_base64());
@@ -57,7 +51,7 @@ std::string base64_encode(const unsigned char* data, size_t length)
 }
 
 // 生成DER格式并Base64编码的密钥对
-std::pair<std::string, std::string> generate_der_base64_key_pair(int bits = 2048)
+std::pair<std::string, std::string> RSAUtils::generate_der_base64_key_pair(int bits = 2048)
 {
     RSA* rsa = RSA_generate_key(bits, RSA_F4, nullptr, nullptr);
     if (!rsa)
@@ -86,7 +80,7 @@ std::pair<std::string, std::string> generate_der_base64_key_pair(int bits = 2048
 }
 
 // 加载Base64编码的DER格式公钥
-RSA* load_base64_der_public_key(const std::string& base64_pubkey)
+RSA* RSAUtils::load_base64_der_public_key(const std::string& base64_pubkey)
 {
     std::vector<unsigned char> der_pubkey = base64_decode(base64_pubkey);
     if (der_pubkey.empty())
@@ -106,7 +100,7 @@ RSA* load_base64_der_public_key(const std::string& base64_pubkey)
 }
 
 // 加载Base64编码的DER格式私钥
-RSA* load_base64_der_private_key(const std::string& base64_privatekey)
+RSA* RSAUtils::load_base64_der_private_key(const std::string& base64_privatekey)
 {
     std::vector<unsigned char> der_privatekey = base64_decode(base64_privatekey);
     if (der_privatekey.empty())
@@ -126,7 +120,7 @@ RSA* load_base64_der_private_key(const std::string& base64_privatekey)
 }
 
 // RSA加密
-std::vector<unsigned char> rsa_encrypt(RSA* rsa, const std::vector<unsigned char>& data)
+std::vector<unsigned char> RSAUtils::rsa_encrypt(RSA* rsa, const std::vector<unsigned char>& data)
 {
     int rsa_size = RSA_size(rsa);
     std::vector<unsigned char> encrypted_data(rsa_size);
@@ -143,7 +137,7 @@ std::vector<unsigned char> rsa_encrypt(RSA* rsa, const std::vector<unsigned char
 }
 
 // RSA解密
-std::vector<unsigned char> rsa_decrypt(RSA* rsa, const std::vector<unsigned char>& encrypted_data)
+std::vector<unsigned char> RSAUtils::rsa_decrypt(RSA* rsa, const std::vector<unsigned char>& encrypted_data)
 {
     int rsa_size = RSA_size(rsa);
     std::vector<unsigned char> decrypted_data(rsa_size);
@@ -218,7 +212,7 @@ int main()
 }
 */
 
-std::string read_key_from_file(bool is_pubkey) {
+std::string RSAUtils::read_key_from_file(bool is_pubkey) {
     std::ifstream key_file;
     if(is_pubkey) {
         //Read public key file "server_pubkey.der"
@@ -243,7 +237,7 @@ std::string read_key_from_file(bool is_pubkey) {
     }
 }
 
-int write_key_to_file(bool is_pubkey, std:string key) {
+int RSAUtils::write_key_to_file(bool is_pubkey, std:string key) {
     std::ofstream key_file;
     if(is_pubkey) {
         key_file = std::ofstream("keys/server_pubkey.der")

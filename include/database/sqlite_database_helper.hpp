@@ -3,11 +3,11 @@
 
 class SQLiteDatabaseHelper {
 private:
-    const char* dbPath;
-    sqlite3 *db = nullptr;
+    std::string m_db_path;
+    sqlite3* m_db = nullptr;
 
 public:
-    SQLiteDatabaseHelper(std::string dbPath);
-    int openDb();
-    int runSQL(std::string sqlStatement);
+    SQLiteDatabaseHelper(std::string db_ath);
+    int open_db();
+    int run_SQL(std::string sql_statement);
 };
