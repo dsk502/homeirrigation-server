@@ -2,11 +2,87 @@
 #include <string>
 #include <thread>
 #include <sqlite3.h>
-#include <pigpio.h>
-#include "../include/networking/networking_thread.hpp"
+#include "networking/networking_thread.hpp"
+#include "crypto/rsa_utils.hpp"
+#include "main.hpp"
 
-//using namespace std;
+std::string HomeIrrigationServer::get_raspberry_pi_id() {
+    std::ifstream cpuinfo("/proc/cpuinfo");
+    std::string line;
+    std::string serial = "0000000000000000"; // 默认值
 
+    if (cpuinfo.is_open()) {
+        while (std::getline(cpuinfo, line)) {
+            if (line.find("Serial") != std::string::npos) {
+                size_t colonPos = line.find(':');
+                if (colonPos != std::string::npos) {
+                    serial = line.substr(colonPos + 1);
+                    serial.erase(serial.begin(), std::find_if(serial.begin(), serial.end(), [](unsigned char ch) {
+                        return !std::isspace(ch);
+                    }));
+                    break;
+                }
+            }
+        }
+        cpuinfo.close();
+    } else {
+        std::cerr << "无法打开 /proc/cpuinfo 文件" << std::endl;
+    }
+
+    return serial;
+}
+
+int HomeIrrigationServer::server_init() {
+
+    //Init pigpio library
+    if (gpioInitialise() < 0) {
+        std::cerr << "Failed to initialise pigpio library" << std::endl;
+        return 1;
+    }
+    return 0;
+
+    //Check if server_id file exists
+    //If yes, read the server id; If not, generate the file
+    std::ifstream server_id_file_read("server_id.txt");
+    if (server_id_file_read) {
+        std::cout << "Server id file exist" << std::endl;
+        std::getline(server_id_file_read, m_server_id);
+        server_id_file_read.close();
+    } else {
+        std::cout << "Server id file does not exist" << std::endl;
+        server_id_file_read.close();
+        m_server_id = get_raspberry_pi_id();
+        std::ofstream server_id_file_write("server_id.txt");
+        server_id_file_write << m_server_id << std::endl;
+        server_id_file_write.close();
+    }
+
+    //Read server_info database to determine whether this device is added by the client
+    m_server_info_database_helper = new ServerInfoDatabaseHelper();
+    int num_of_records = m_server_info_database_helper->record_num();
+    if(num_of_records == 1) {
+        m_is_added == true;
+    } else if(num_of_records == 0) {
+        m_is_added == false;
+    } else {
+        //Server Error
+        std::cout << "Server Error" << std::endl;
+        return 1;
+    }
+
+    if(m_is_added) {   //If the device is added
+        //Read the keys from key files
+        m_server_pubkey = RSAUtils::read_key_from_file(true);
+        m_server_prikey = RSAUtils::read_key_from_file(false);
+        
+    } else {    //If the device is not added
+        
+    }
+    std::thread net_thread(NetworkingThread::networking_thread_main(this));
+
+}
+
+/*
 static int callback(void *para, int argc, char **argv, char **azColName){
     int i;
     for(i=0; i<argc; i++){
@@ -14,7 +90,7 @@ static int callback(void *para, int argc, char **argv, char **azColName){
     }
     printf("\n");
     return 0;
- }
+}*/
 
 int main() {
     //Read the local SQLite database

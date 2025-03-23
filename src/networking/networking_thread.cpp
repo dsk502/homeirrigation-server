@@ -9,7 +9,7 @@
 #define ENCRYPTED_TAG (char)0x02
 #define UNENCRYPTED_TAG (char)0x01
 
-std::string server_prikey;
+//std::string server_prikey;
 //Char array copy method similar to Java's System.arraycopy()
 
 void char_array_copy(const char* src, int src_pos, char* dest, int dest_pos, int len) {
@@ -104,7 +104,7 @@ std::vector<std::string> extract_params(std::string message_pt) {
     return params;
 }
 
-void server_func() {
+int NetworkingThread::networking_thread_main(HomeIrrigationServer* home_irri_serv) {
     std::string server_id;
 
     int server_fd, client_socket;

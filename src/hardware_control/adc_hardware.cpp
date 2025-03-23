@@ -1,6 +1,6 @@
 #include "hardware_control/adc_hardware.hpp"
 
-int ADCCommon::init_gpio() {
+int ADCHardware::init_gpio() {
 
     int handle = i2c_open(I2C_BUS, PCF8591_ADDRESS);
     if (handle < 0) {
@@ -12,7 +12,7 @@ int ADCCommon::init_gpio() {
 }
 
 //Initialize i2c communication
-int ADCCommon::i2c_open(int bus, int address) {
+int ADCHardware::i2c_open(int bus, int address) {
     char device[16];
     sprintf(device, "/dev/i2c-%d", bus);
     int handle = ::open(device, O_RDWR);
@@ -29,7 +29,7 @@ int ADCCommon::i2c_open(int bus, int address) {
 }
 
 //Read PCF8591 channel data
-int ADCCommon::read_pcf8591_channel(int channel) {
+int ADCHardware::read_pcf8591_channel(int channel) {
     std::lock_guard<std::mutex> lock(i2c_mutex); // auto lock and unlock
     char command = channel; // set channel
     ::write(m_handle, &command, 1);
@@ -38,16 +38,16 @@ int ADCCommon::read_pcf8591_channel(int channel) {
     return static_cast<int>(data);
 }
 
-double SoilMoistureSensor::read_soil_humidity() {
+double ADCHardware::read_soil_humidity() {
    
-    int soil_humidity_value = m_adc_common->read_pcf8591_channel(m_adc_common->m_handle, SOIL_HUMIDITY_CHANNEL);
+    int soil_humidity_value = read_pcf8591_channel(m_handle, SOIL_HUMIDITY_CHANNEL);
     double soil_humidity_percentage = (1023 - soil_humidity_value) * 100.0 / 1023;
     return soil_humidity_percentage;
     
 }
 
-double WaterLevelSensor::read_water_level() {
-    int water_level_value = m_adc_common->read_pcf8591_channel(m_adc_common->m_handle, WATER_LEVEL_CHANNEL);
+double ADCHardware::read_water_level() {
+    int water_level_value = read_pcf8591_channel(m_handle, WATER_LEVEL_CHANNEL);
     double water_level_percentage = water_level_value * 100.0 / 1023;
     return water_level_percentage;
     
