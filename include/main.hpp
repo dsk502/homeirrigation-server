@@ -23,11 +23,14 @@ public:
     ServerInfoDatabaseHelper* m_server_info_database_helper;
     WateringRecordHelper* m_watering_record_helper;
 
-    //Keys
+    //Server keys
     std::string m_server_pubkey;
     std::string m_server_prikey;
+    
+    //Server info
+    server_info* m_server_info;
 
-    //Watering Record
+    //Watering record helper
     WateringRecordHelper* m_watering_record_helper;
 
     int server_init();
@@ -42,3 +45,7 @@ int main() {
     server.server_main();
     return 0;
 }*/
+
+typedef struct date_time {
+    
+}

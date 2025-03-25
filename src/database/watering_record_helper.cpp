@@ -1,4 +1,4 @@
-#include "watering_record/watering_record_helper.hpp"
+#include "database/watering_record_helper.hpp"
 
 /*
 int WateringRecordHelper::create_record(std::string date_str) {
@@ -63,3 +63,17 @@ int WateringRecordHelper::modify_data(std::string date_str, int attribute, std::
     output_file->close();
     delete output_file;
 }*/
+
+WateringRecordHelper::WateringRecordHelper() {
+    m_sqlite_database = new SQLiteDatabase();
+    m_sqlite_database->open(WATERING_RECORD_DB_PATH);
+}
+
+WateringRecordHelper::~WateringRecordHelper() {
+    m_sqlite_database->close();
+    delete m_sqlite_database;
+}
+
+int WateringRecordHelper::modify_record(std::string date_str, int attribute, std::string attribute_value_str, bool is_incremental) {
+
+}

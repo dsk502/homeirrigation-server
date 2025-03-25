@@ -1,8 +1,10 @@
-#include <cstdio>
+#include <iostream>
 #include <string>
 #include <thread>
 #include <sqlite3.h>
+#include <chrono>
 #include "networking/networking_thread.hpp"
+#include "hardware_control/pump_thread.hpp"
 #include "crypto/rsa_utils.hpp"
 #include "main.hpp"
 
@@ -71,15 +73,40 @@ int HomeIrrigationServer::server_init() {
     }
 
     if(m_is_added) {   //If the device is added
-        //Read the keys from key files
+        //Read the server info record (client_pubkey is in it)
+        m_server_info = m_server_info_database_helper->get_server_info();
+        
+        //Read the keys
         m_server_pubkey = RSAUtils::read_key_from_file(true);
         m_server_prikey = RSAUtils::read_key_from_file(false);
         
+        //Get the current date and time
+        time_point now = std::chrono::system_clock::now();
+        std::time_t now_c = std::chrono::system_clock::to_time_t(now);
+        std::tm* ltm = std::localtime(&now_c);  //local time
+
+        /*
+        int year = 1900 + ltm->tm_year;
+        int month = 1 + ltm->tm_mon;    // tm_mon是从0开始的月份（0代表1月）
+        int mday = ltm->tm_mday;         // tm_mday是日期（1-31）
+        */
+        int current_hour = ltm->tm_hour;    //hour
+        int current_min = ltm->tm_min;   //minute
+        
+
+        //Start the pump thread
+        std::thread pump_thread(PumpThread::pump_thread_main, m_server_info->scheduled_freq, m_server_info->scheduled_time, now, current_hour, current_min);
+        pump_thread.detach();
+
+        //Start the soil moisture thread
+        std::thread soil_moisture_thread();
+        soil_moisture_thread.detach();
+
     } else {    //If the device is not added
         
     }
     std::thread net_thread(NetworkingThread::networking_thread_main(this));
-
+    net_thread.join();
 }
 
 /*

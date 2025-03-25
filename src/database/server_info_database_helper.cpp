@@ -5,6 +5,11 @@ ServerInfoDatabaseHelper::ServerInfoDatabaseHelper() {
     m_sqlite_database->open(SERVER_INFO_DB_PATH);
 }
 
+ServerInfoDatabaseHelper::~ServerInfoDatabaseHelper() {
+    m_sqlite_database->close();
+    delete m_sqlite_database;
+}
+
 //Return the number of records
 int ServerInfoDatabaseHelper::record_num() {
     std::vector<std::vector<std::string>> records;
@@ -37,4 +42,20 @@ int ServerInfoDatabaseHelper::update_mode(std::string new_mode, std::string new_
         return 1;
     }
 
+}
+
+//Get the server info
+struct server_info* ServerInfoDatabaseHelper::get_server_info() {
+    server_info* info = new server_info();
+    std::vector<std::vector<std::string>> records;
+    std::string sql_stmt = "SELECT * FROM server_info";
+    records = m_sqlite_database->query(sql_stmt);
+    info->client_id = records[0][0];
+    info->client_pubkey = records[0][1];
+    info->client_add_time = records[0][2];
+    info->mode = records[0][3];
+    info->water_amount = records[0][4];
+    info->scheduled_freq = records[0][5];
+    info->scheduled_time = records[0][6];
+    return info;
 }
