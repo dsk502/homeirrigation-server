@@ -1,5 +1,9 @@
 #include <pigpio.h>
 #include <chrono>
+#include <thread>
+#include "database/watering_record_helper.hpp"
+#include "adc_hardware.hpp"
+
 #define PUMP_PIN 18
 
 #define FREQ_EVERY_DAY "1"
@@ -12,12 +16,18 @@
 #define HOURS_ONE_WEEK 168
 
 class PumpThread {
-    static bool water_immediately = false;
-    static bool stop_thread = false;
-    static int run_pump();
-    static int pump_thread_schedule(std::string scheduled_freq, std::string scheduled_time, std::chrono::system_clock::time_point start_time_point, int start_hour, int start_min);
+public:
+    bool water_immediately = false; //Will be edited by multiple threads
+    bool stop_thread = false;
+
+    PumpThread(WateringRecordHelper* watering_record_helper, ADCHardware* adc_hardware);
+
+    int run_pump(double water_amount, std::chrono::system_clock::time_point now);
+    int pump_thread_main(double water_amount, std::string scheduled_freq, std::string scheduled_time, std::chrono::system_clock::time_point start_time_point, int start_hour, int start_min);
 
 
 private:
-    static std::mutex mtx;
+    WateringRecordHelper* watering_record_helper_ptr;
+    ADCHardware* adc_hardware_ptr;
+    //std::mutex mtx_;
 };

@@ -1,4 +1,4 @@
-#include "hardware_control/pump.hpp"
+#include "hardware_control/pump_thread.hpp"
 #include "hardware_control/adc_hardware.hpp"
 #include "database/sqlite_database.hpp"
 #include "database/server_info_database_helper.hpp"
@@ -16,7 +16,6 @@ public:
     bool m_is_added;
 
     //Hardware
-    Pump* m_pump;
     ADCHardware* m_adc_hardware;
 
     //Database helpers
@@ -30,8 +29,9 @@ public:
     //Server info
     server_info* m_server_info;
 
-    //Watering record helper
-    WateringRecordHelper* m_watering_record_helper;
+    //Thread class objects
+    PumpThread* m_pump_thread_obj;
+    
 
     int server_init();
 

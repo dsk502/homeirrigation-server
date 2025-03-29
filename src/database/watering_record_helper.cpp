@@ -8,61 +8,7 @@ int WateringRecordHelper::create_record(std::string date_str) {
 int WateringRecordHelper::del_record(std::string start_date_str, std::string end_date_str) {
 
 }
-
-std::ifstream* WateringRecordHelper::record_read_stream(std::string date_str) {
-    std::ifstream* input_stream = new std::ifstream(record_folder + date_str);
-    //fail() function can give information of file existance, so no need to explicitly check file existance.
-    if(input_stream->fail()) {
-        return nullptr;
-    } else {
-        return input_stream;
-    }
-}
-
-std::ofstream* WateringRecordHelper::record_write_stream(std::string date_str) {
-    std::ofstream* output_stream = new std::ofstream(record_folder + date_str);
-    //output_stream.open();
-    if(output_stream->fail()) {
-        return nullptr;
-    } else {
-        return output_stream;
-    }
-}
-
-int WateringRecordHelper::modify_data(std::string date_str, int attribute, std::string attribute_value_str, bool is_incremental) {
-    //1. Read the original file
-    std::ifstream* input_file = record_read_stream(record_folder + date_str); // 打开文件
-    if (input_file == nullptr) {
-        std::cerr << "Failed to open the file" << std::endl;
-        return -1;
-    }
-
-    std::vector<std::string> lines; // 用于存储文件内容的字符串数组
-    std::string line;   //lines[0] is times_of_watering, line[1] is amount_of_watering, line[2] is soil_moisture_percentage
-
-    // 按行读取文件内容
-    while (std::getline(*input_file, line)) {
-        lines.push_back(line);
-    }
-
-    input_file->close(); // 关闭文件
-    delete input_file;
-
-    //2. Modify the content
-    lines[attribute] == attribute_value_str;
-
-    //3. Write the lines to the file
-    std::ofstream* output_file = record_write_stream(record_folder + date_str);
-    if(output_file == nullptr) {
-        return -1;
-    }
-    for(int i = 0; i < 3; i++) {
-        (*output_file) << lines[i] << std::endl;
-    }
-
-    output_file->close();
-    delete output_file;
-}*/
+*/
 
 WateringRecordHelper::WateringRecordHelper() {
     m_sqlite_database = new SQLiteDatabase();
@@ -74,6 +20,55 @@ WateringRecordHelper::~WateringRecordHelper() {
     delete m_sqlite_database;
 }
 
-int WateringRecordHelper::modify_record(std::string date_str, int attribute, std::string attribute_value_str, bool is_incremental) {
-
+int WateringRecordHelper::create_table_if_not_exist() {
+    std::string create_table_sql = "CREATE TABLE IF NOT EXISTS watering_record {day INTEGER PRIMARY KEY, times_of_watering INTEGER, soil_moisture_percentage REAL};";
+    m_sqlite_database->exec(create_table_sql);
 }
+
+//Update a record in watering_record table
+int WateringRecordHelper::update_record(std::string date_str, int col_num, std::string data, bool is_incremental) {
+    create_record_if_not_exist(date_str);
+    std::string data_to_write;
+    if(is_incremental) {
+        std::string query_sql = "SELECT * FROM watering_record where day = " + date_str + ";";
+        auto record = m_sqlite_database->query(query_sql);
+        std::string old_data = record[0][col_num];
+        if(col_num == COL_TIMES_OF_WATERING) {
+            data_to_write = std::to_string(std::stoi(old_data) + std::stoi(data));
+        } else {
+            data_to_write = std::to_string(std::stod(old_data) + std::stod(data));
+        }
+    } else {
+        data_to_write = data;
+    }
+    std::string col_name;
+    if(col_num == COL_TIMES_OF_WATERING) {
+        col_name = "times_of_watering";
+    } else if (col_num == COL_AMOUNT_OF_WATERING) {
+        col_name = "amount_of_watering";
+    } else {
+        col_name = "soil_moisture_percentage";
+    }
+    //std::string write_sql = "INSERT OR REPLACE INTO watering_record (day, times_of_watering, amount_of_watering, soil_moisture_percentage) VALUES"
+    std::string write_sql = "UPDATE watering_record SET " + col_name + " = " + data_to_write + " where day = " + date_str + ";"; 
+    m_sqlite_database->exec(write_sql);
+    return 0;
+}
+
+void WateringRecordHelper::create_record_if_not_exist(std::string date_str) {
+    std::string create_record_sql = "INSERT OR IGNORE INTO watering_record (day, times_of_watering, amount_of_watering, soil_moisture_percentage) VALUES (" + date_str + ", 0, 0, 0);";
+    m_sqlite_database->exec(create_record_sql);
+}
+
+int WateringRecordHelper::delete_record(std::string date_str) {
+    std::string delete_record_sql = "DELETE FROM watering_record WHERE day = " + date_str + ";";
+    m_sqlite_database->exec(delete_record_sql);
+    return 0;
+}
+
+int WateringRecordHelper::clear_record() {
+    std::string clear_record_sql = "DELETE FROM watering_record;";
+    m_sqlite_database->exec(clear_record_sql);
+    return 0;
+}
+

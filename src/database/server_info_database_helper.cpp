@@ -10,6 +10,16 @@ ServerInfoDatabaseHelper::~ServerInfoDatabaseHelper() {
     delete m_sqlite_database;
 }
 
+//Create the server_info table if not exist
+int ServerInfoDatabaseHelper::create_table_if_not_exist() {
+    std::string create_server_info_sql = "CREATE TABLE IF NOT EXISTS server_info ("
+        "server_id TEXT PRIMARY KEY, is_added INTEGER, client_add_time INTEGER, "
+        "mode INTEGER, water_amount REAL, automatic_humidity REAL, "
+        "scheduled_freq INTEGER, scheduled_time TEXT"
+        ");";
+    m_sqlite_database->exec(create_server_info_sql);
+}
+
 //Return the number of records
 int ServerInfoDatabaseHelper::record_num() {
     std::vector<std::vector<std::string>> records;

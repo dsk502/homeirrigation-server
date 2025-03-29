@@ -13,18 +13,22 @@
 #define SOIL_HUMIDITY_CHANNEL 2
 
 //class for hardware connecting to the analog to digital converter
+//They are water level sensor and soil moisture sensor
 class ADCHardware {
 public:
-    int m_handle;
 
-    int init_gpio();
+    int init_gpio();    //This is like the constructor
 
-protected:
+    double read_soil_humidity();
+    double read_water_level();
+
+private:
     //Mutex
     std::mutex m_i2c_mutex;
 
+    int m_handle;
+
     int i2c_open(int bus, int address);
     int read_pcf8591_channel(int channel);
-    double read_soil_humidity();
-    double read_water_level();
+    
 };

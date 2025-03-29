@@ -4,9 +4,9 @@
 #include "sqlite_database.hpp"
 
 #define WATERING_RECORD_DB_PATH "dbs/watering_record.db"
-#define ATTR_TIMES_OF_WATERING 0
-#define ATTR_AMOUNT_OF_WATERING 1
-#define ATTR_SOIL_MOISTURE_PERCENTAGE 2
+#define COL_TIMES_OF_WATERING 1
+#define COL_AMOUNT_OF_WATERING 2
+#define COL_SOIL_MOISTURE_PERCENTAGE 3
 
 /*
 class WateringRecordHelper {
@@ -36,8 +36,13 @@ private:
 public:
     WateringRecordHelper();
     ~WateringRecordHelper();
-    int add_record();
-    int del_record(int start_date, int end_date);
-    int modify_record(std::string date_str, int attribute, std::string attribute_value_str, bool is_incremental);
-    std::vector<std::vector<std::string>> read_records(int start_date);
+    //int add_record();
+    
+    int create_table_if_not_exist();
+    void create_record_if_not_exist(std::string date_str);
+    int update_record(std::string date_str, int col_num, std::string data, bool is_incremental);
+    int delete_record(std::string date_str);
+    int clear_record();
+    //std::vector<std::vector<std::string>> read_records(int start_date);
+
 };

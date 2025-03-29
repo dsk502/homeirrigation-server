@@ -1,6 +1,11 @@
 #include "hardware_control/pump_thread.hpp"
 
-int PumpThread::pump_thread_schedule(std::string scheduled_freq, std::string scheduled_time, std::chrono::system_clock::time_point start_time_point, int start_hour, int start_min) {
+PumpThread::PumpThread(WateringRecordHelper* watering_record_helper, ADCHardware* adc_hardware) {
+    watering_record_helper_ptr = watering_record_helper;
+    adc_hardware_ptr = adc_hardware;
+}
+
+int PumpThread::pump_thread_main(double water_amount, std::string scheduled_freq, std::string scheduled_time, std::chrono::system_clock::time_point start_time_point, int start_hour, int start_min) {
     //Get the scheduled hour and minute in integer
     int scheduled_hour = std::stoi(scheduled_time.substr(0, 2));
     int scheduled_min = std::stoi(scheduled_time.substr(2, 2));
@@ -22,9 +27,9 @@ int PumpThread::pump_thread_schedule(std::string scheduled_freq, std::string sch
     //Calculate the first duration
     double first_duration_hours;
     if(is_next_day == false) {
-        duration_hours = (scheduled_min - start_min) / 60.0 + (scheduled_hour - start_hour);
+        first_duration_hours = (scheduled_min - start_min) / 60.0 + (scheduled_hour - start_hour);
     } else {
-        duration_hours = (scheduled_min - start_min) / 60.0 + (scheduled_hour - start_hour) + 24;
+        first_duration_hours = (scheduled_min - start_min) / 60.0 + (scheduled_hour - start_hour) + 24;
     }
     auto first_duration = std::chrono::seconds((int)(first_duration_hours * 60 * 60));
     //time_point target_time;
@@ -45,12 +50,13 @@ int PumpThread::pump_thread_schedule(std::string scheduled_freq, std::string sch
     //Run the iterations
     //First duration (maybe < 1 day)
     while(true) {
-        if(std::chrono::system_clock::now() - start_time_point >= first_duration) { //If the duration has passed
-            run_pump();
+        auto now = std::chrono::system_clock::now();
+        if(now - start_time_point >= first_duration) { //If the duration has passed
+            run_pump(water_amount, now);
             break;
         }
         if(water_immediately) {
-            run_pump();
+            run_pump(water_amount, now);
             water_immediately = false;
         }
         if(stop_thread) {
@@ -63,12 +69,13 @@ int PumpThread::pump_thread_schedule(std::string scheduled_freq, std::string sch
     while(true) {
         start_time_point = std::chrono::system_clock::now();
         while(true) {
-            if(std::chrono::system_clock::now() - start_time_point >= normal_duration) {
-                run_pump();
+            auto now = std::chrono::system_clock::now();
+            if(now - start_time_point >= normal_duration) {
+                run_pump(water_amount, now);
                 break;
             }
             if(water_immediately) {
-                run_pump();
+                run_pump(water_amount, now);
                 water_immediately = false;
             }
             if(stop_thread) {
@@ -83,15 +90,29 @@ int PumpThread::pump_thread_schedule(std::string scheduled_freq, std::string sch
 }
 
 //Watering the plant and write the data to the database
-int PumpThread::run_pump(std::chrono::system) {
+int PumpThread::run_pump(double water_amount, std::chrono::system_clock::time_point now) {
     gpioSetMode(PUMP_PIN, PI_OUTPUT);
 
-    //Control the pump
+    //1. Determine whether water tank has enough water
+
+
+    //2. Start the pump
     gpioWrite(PUMP_PIN, PI_ON);  //Set the pin to high voltage 
     gpioDelay(500000 * 10); //Wait 500ms*10=5s. The high voltage will be there for 5s.
     gpioWrite(PUMP_PIN, PI_OFF);
+ 
+    //3. Extract date (YYYYMMDD) from the timepoint parameter
+    std::time_t now_time_t = std::chrono::system_clock::to_time_t(now);
+    std::tm now_tm;
+    localtime_r(&now_time_t, &now_tm);  // Thread safe version of localtime()
+    char buffer[80];
+    strftime(buffer, sizeof(buffer), "%Y%m%d", &now_tm);    //Format to YYYYMMDD
+    std::string date_str(buffer);
 
-    //Write the watering info into the watering record database
-    
+    //4. Write the watering info into the watering record database
+    //times_of_watering += 1, amount_of_watering += water_amount
+    watering_record_helper_ptr->update_record(date_str, COL_TIMES_OF_WATERING, "1", true);
+    watering_record_helper_ptr->update_record(date_str, COL_AMOUNT_OF_WATERING, std::to_string(water_amount), true);
+
     return 0;
 }

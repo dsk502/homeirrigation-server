@@ -36,14 +36,14 @@ std::string HomeIrrigationServer::get_raspberry_pi_id() {
 
 int HomeIrrigationServer::server_init() {
 
-    //Init pigpio library
+    //1. Init pigpio library
     if (gpioInitialise() < 0) {
         std::cerr << "Failed to initialise pigpio library" << std::endl;
         return 1;
     }
     return 0;
 
-    //Check if server_id file exists
+    //2. Check if server_id file exists
     //If yes, read the server id; If not, generate the file
     std::ifstream server_id_file_read("server_id.txt");
     if (server_id_file_read) {
@@ -59,8 +59,15 @@ int HomeIrrigationServer::server_init() {
         server_id_file_write.close();
     }
 
-    //Read server_info database to determine whether this device is added by the client
+    //3. Init the server_info database if there is nothing in it.
     m_server_info_database_helper = new ServerInfoDatabaseHelper();
+    m_server_info_database_helper->create_table_if_not_exist();
+
+    //4. Init the ADC hardware
+    m_adc_hardware = new ADCHardware();
+    m_adc_hardware->init_gpio();
+    
+    //Read server_info database to determine whether this device is added by the client
     int num_of_records = m_server_info_database_helper->record_num();
     if(num_of_records == 1) {
         m_is_added == true;
@@ -95,7 +102,8 @@ int HomeIrrigationServer::server_init() {
         
 
         //Start the pump thread
-        std::thread pump_thread(PumpThread::pump_thread_main, m_server_info->scheduled_freq, m_server_info->scheduled_time, now, current_hour, current_min);
+        m_pump_thread_obj = new PumpThread(m_watering_record_helper, m_adc_hardware);
+        std::thread pump_thread(m_pump_thread_obj->pump_thread_main, m_server_info->scheduled_freq, m_server_info->scheduled_time, now, current_hour, current_min);
         pump_thread.detach();
 
         //Start the soil moisture thread
