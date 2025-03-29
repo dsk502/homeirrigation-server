@@ -1,4 +1,4 @@
-class HomeIrrigationServer;
+#include "home_irrigation_server.hpp"
 
 /*
 static int callback(void *para, int argc, char **argv, char **azColName){
@@ -11,6 +11,7 @@ static int callback(void *para, int argc, char **argv, char **azColName){
 }*/
 
 int main() {
+    /*
     //Read the local SQLite database
     //sqlite3_open() will create the database file if it does not exist
     sqlite3 *db;
@@ -54,6 +55,12 @@ int main() {
                 fprintf(stderr, "Server Error");
             }
         }
+    }
+    */
+    HomeIrrigationServer* server = new HomeIrrigationServer();
+    server->server_init();
+    while(true) {
+        
     }
     return 0;
 }

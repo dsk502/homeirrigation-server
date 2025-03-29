@@ -23,8 +23,7 @@ public:
     PumpThread(WateringRecordHelper* watering_record_helper, ADCHardware* adc_hardware);
 
     int run_pump(double water_amount, std::chrono::system_clock::time_point now);
-    int pump_thread_main(double water_amount, std::string scheduled_freq, std::string scheduled_time, std::chrono::system_clock::time_point start_time_point, int start_hour, int start_min);
-
+    int pump_thread_main(double water_amount, std::string scheduled_freq, std::string scheduled_time);
 
 private:
     WateringRecordHelper* watering_record_helper_ptr;

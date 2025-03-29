@@ -27,5 +27,6 @@ public:
     int insert_record(std::string client_id, std::string client_pubkey, std::string client_add_time, std::string mode, std::string water_amount, std::string scheduled_freq, std::string scheduled_time);
     int update_mode(std::string new_mode, std::string new_water_amount, std::string new_scheduled_freq, std::string new_scheduled_time);
     server_info* get_server_info();
+    void clear_server_info();
 };
 

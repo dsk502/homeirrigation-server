@@ -42,6 +42,12 @@ public:
     //Thread class objects
     PumpThread* m_pump_thread_obj;
     SoilMoistureThread* m_soil_moisture_thread_obj;
+    NetworkingThread* m_net_thread_obj;
+
+    //Thread variables
+    std::thread* m_pump_thread;
+    std::thread* m_soil_moisture_thread;
+    std::thread* m_net_thread;
 
     int server_init();
 

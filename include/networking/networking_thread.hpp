@@ -1,8 +1,11 @@
 //void server_func(int is_added, int listeningPort);
-
-class HomeIrrigationServer;
+#include "database/sqlite_database.hpp"
+#include "hardware_control/pump_thread.hpp"
 
 class NetworkingThread {
 public:
-    static int networking_thread_main(HomeIrrigationServer* home_irri_serv);
+    int networking_thread_main(bool* is_added);
+
+    
+    //ADCHardware
 };

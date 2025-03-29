@@ -78,34 +78,21 @@ int HomeIrrigationServer::server_init() {
         //Read the keys
         m_server_pubkey = RSAUtils::read_key_from_file(true);
         m_server_prikey = RSAUtils::read_key_from_file(false);
-        
-        //Get the current date and time
-        time_point now = std::chrono::system_clock::now();
-        std::time_t now_c = std::chrono::system_clock::to_time_t(now);
-        std::tm* ltm = std::localtime(&now_c);  //local time
-
-        /*
-        int year = 1900 + ltm->tm_year;
-        int month = 1 + ltm->tm_mon;    // tm_mon是从0开始的月份（0代表1月）
-        int mday = ltm->tm_mday;         // tm_mday是日期（1-31）
-        */
-        int current_hour = ltm->tm_hour;    //hour
-        int current_min = ltm->tm_min;   //minute
-        
 
         //Start the pump thread
         m_pump_thread_obj = new PumpThread(m_watering_record_helper, m_adc_hardware);
-        std::thread pump_thread(m_pump_thread_obj->pump_thread_main, m_server_info->scheduled_freq, m_server_info->scheduled_time, now, current_hour, current_min);
-        pump_thread.detach();
+        m_pump_thread = new std::thread(m_pump_thread_obj->pump_thread_main, m_server_info->scheduled_freq, m_server_info->scheduled_time);
+        //m_pump_thread.detach();
 
         //Start the soil moisture thread
         m_soil_moisture_thread_obj = new SoilMoistureThread(m_adc_hardware, m_watering_record_helper);
-        std::thread soil_moisture_thread();
-        soil_moisture_thread.detach();
+        m_soil_moisture_thread = new std::thread(m_soil_moisture_thread_obj->soil_moisture_thread_main);
+        //m_soil_moisture_thread.detach();
 
     } else {    //If the device is not added
-        
+        //Do nothing
     }
-    std::thread net_thread(NetworkingThread::networking_thread_main(this));
-    net_thread.join();
+    m_net_thread_obj = new NetworkingThread();
+    m_net_thread = new std::thread(m_net_thread_obj->networking_thread_main);
+    //m_net_thread.detach();
 }

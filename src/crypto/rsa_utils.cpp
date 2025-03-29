@@ -120,37 +120,44 @@ RSA* RSAUtils::load_base64_der_private_key(const std::string& base64_privatekey)
 }
 
 // RSA加密
-std::vector<unsigned char> RSAUtils::rsa_encrypt(RSA* rsa, const std::vector<unsigned char>& data)
+std::string RSAUtils::rsa_encrypt(RSA* rsa, const std::string& data)
 {
     int rsa_size = RSA_size(rsa);
     std::vector<unsigned char> encrypted_data(rsa_size);
 
-    int result = RSA_public_encrypt(data.size(), data.data(), encrypted_data.data(), rsa, RSA_PKCS1_PADDING);
+    int result = RSA_public_encrypt(data.size(), reinterpret_cast<const unsigned char*>(data.data()), encrypted_data.data(), rsa, RSA_PKCS1_PADDING);
     if (result == -1)
     {
         print_openssl_error();
-        return {};
+        return "";
     }
 
     encrypted_data.resize(result);
-    return encrypted_data;
+    return base64_encode(encrypted_data.data(), encrypted_data.size());
 }
 
 // RSA解密
-std::vector<unsigned char> RSAUtils::rsa_decrypt(RSA* rsa, const std::vector<unsigned char>& encrypted_data)
+std::string RSAUtils::rsa_decrypt(RSA* rsa, const std::string& encrypted_data)
 {
+    std::vector<unsigned char> der_encrypted_data = base64_decode(encrypted_data);
+    if (der_encrypted_data.empty())
+    {
+        std::cerr << "Failed to decode Base64 encrypted data." << std::endl;
+        return "";
+    }
+
     int rsa_size = RSA_size(rsa);
     std::vector<unsigned char> decrypted_data(rsa_size);
 
-    int result = RSA_private_decrypt(encrypted_data.size(), encrypted_data.data(), decrypted_data.data(), rsa, RSA_PKCS1_PADDING);
+    int result = RSA_private_decrypt(der_encrypted_data.size(), der_encrypted_data.data(), decrypted_data.data(), rsa, RSA_PKCS1_PADDING);
     if (result == -1)
     {
         print_openssl_error();
-        return {};
+        return "";
     }
 
     decrypted_data.resize(result);
-    return decrypted_data;
+    return std::string(decrypted_data.begin(), decrypted_data.end());
 }
 
 /*
@@ -223,6 +230,7 @@ std::string RSAUtils::read_key_from_file(bool is_pubkey) {
         
     }
     if (!key_file.is_open()) {
+        //If the file does not exist, then is_open() will return false.
         std::cerr << "Failed to open the file" << std::endl;
         return "";
     }

@@ -5,7 +5,20 @@ PumpThread::PumpThread(WateringRecordHelper* watering_record_helper, ADCHardware
     adc_hardware_ptr = adc_hardware;
 }
 
-int PumpThread::pump_thread_main(double water_amount, std::string scheduled_freq, std::string scheduled_time, std::chrono::system_clock::time_point start_time_point, int start_hour, int start_min) {
+int PumpThread::pump_thread_main(double water_amount, std::string scheduled_freq, std::string scheduled_time) {
+    //Get the current date and time
+    time_point start_time_point = std::chrono::system_clock::now();
+    std::time_t start_c = std::chrono::system_clock::to_time_t(start_time_point);
+    std::tm* ltm_start = std::localtime(&start_c);  //local time
+
+    /*
+    int year = 1900 + ltm->tm_year;
+    int month = 1 + ltm->tm_mon;    // tm_mon是从0开始的月份（0代表1月）
+    int mday = ltm->tm_mday;         // tm_mday是日期（1-31）
+    */
+    int start_hour = ltm_start->tm_hour;    //hour
+    int start_min = ltm_start->tm_min;   //minute
+    
     //Get the scheduled hour and minute in integer
     int scheduled_hour = std::stoi(scheduled_time.substr(0, 2));
     int scheduled_min = std::stoi(scheduled_time.substr(2, 2));

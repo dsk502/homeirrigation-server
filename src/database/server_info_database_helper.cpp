@@ -69,3 +69,9 @@ struct server_info* ServerInfoDatabaseHelper::get_server_info() {
     info->scheduled_time = records[0][6];
     return info;
 }
+
+//Clear server info
+void ServerInfoDatabaseHelper::clear_server_info() {
+    std::string clear_server_info_sql = "DELETE FROM server_info;";
+    m_sqlite_database->exec(clear_server_info_sql);
+}
