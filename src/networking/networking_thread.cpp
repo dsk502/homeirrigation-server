@@ -109,6 +109,17 @@ std::vector<std::string> extract_params(std::string message_pt) {
     return params;
 }
 
+// Ensure all data is sent
+int sendAll(int sock, const char* buf, int len) {
+    int total = 0;
+    while (total < len) {
+        int sent = send(sock, buf + total, len - total, 0);
+        if (sent == -1) return -1;
+        total += sent;
+    }
+    return total;
+}
+
 int NetworkingThread::networking_thread_main(bool* is_added, server_info* server_info, ServerInfoDatabaseHelper* server_info_db_helper, WateringRecordHelper* watering_record_helper, PumpThread*& pump_thread_obj, std::thread*& pump_thread, SoilMoistureThread*& soil_moisture_thread_obj, std::thread*& soil_moisture_thread, std::string& server_pubkey, std::string& server_prikey) {    //pump_thread is a reference to the pointer pointing to PumpThread. This can pass the pointer by its address (the pointer of pointer).
     std::string server_id;
 
@@ -121,6 +132,13 @@ int NetworkingThread::networking_thread_main(bool* is_added, server_info* server
     // 创建TCP套接字
     if ((server_fd = socket(AF_INET, SOCK_STREAM, 0)) == 0) {
         perror("socket failed");
+        exit(EXIT_FAILURE);
+    }
+
+    // Forcefully attaching socket to the port 8080
+    int opt = 1;
+    if (setsockopt(server_fd, SOL_SOCKET, SO_REUSEADDR | SO_REUSEPORT, &opt, sizeof(opt))) {
+        perror("Setsockopt failed");
         exit(EXIT_FAILURE);
     }
 
@@ -254,7 +272,44 @@ int NetworkingThread::networking_thread_main(bool* is_added, server_info* server
 
             } else if(recv_command == "download_stat"){
                 //Send the watering_record database file to the client
-                
+                //Open the file to be sent
+                std::ifstream file(SERVER_INFO_DB_PATH, std::ios::binary | std::ios::ate);
+                if (!file) {
+                    std::cerr << "Failed to open file" << std::endl;
+                    //close(new_socket);
+                    //close(server_fd);
+                    //return -1;
+                }
+
+                // Get file size
+                std::streamsize fileSize = file.tellg();
+                file.seekg(0, std::ios::beg);
+
+                // Send file size to client
+                if (sendAll(new_socket, (char*)&fileSize, sizeof(fileSize)) == -1) {
+                    std::cerr << "Failed to send file size" << std::endl;
+                    file.close();
+                    //close(new_socket);
+                    //close(server_fd);
+                    //return -1;
+                }
+
+                // Send file content in chunks
+                char buffer[BLOCK_SIZE];
+                while (fileSize > 0) {
+                    int chunkSize = (fileSize > BLOCK_SIZE) ? BLOCK_SIZE : fileSize;
+                    file.read(buffer, chunkSize);
+                    if (sendAll(new_socket, buffer, chunkSize) == -1) {
+                        std::cerr << "Failed to send file chunk" << std::endl;
+                        file.close();
+                        //close(new_socket);
+                        //close(server_fd);
+                        //return -1;
+                    }
+                    fileSize -= chunkSize;
+                }
+
+                file.close();
 
 
 
