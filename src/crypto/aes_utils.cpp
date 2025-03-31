@@ -5,7 +5,7 @@
 #define KEY_FILE "keys/aes.key"
 
 // 生成密钥和IV，并保存到文件
-void generate_key_iv() {
+void AESUtils::generate_key_iv() {
     //const unsigned int key_len = 32; // AES-256 key length
     //const unsigned int iv_len = 16;  // IV length
     unsigned char key[KEY_LEN], iv[IV_LEN];
@@ -27,13 +27,68 @@ void generate_key_iv() {
 }
 
 //Use ifstream to determine the existance of the file
-bool is_key_file_exist() {
+bool AESUtils::is_key_file_exist() {
     std::ifstream key_file(KEY_FILE, std::ios::binary);
     return key_file.good();
 }
 
+// 读取密钥的Base64编码形式
+std::string AESUtils::read_key_base64() {
+    return read_base64(KEY_LEN, 0);
+}
+
+// 读取IV的Base64编码形式
+std::string AESUtils::read_iv_base64() {
+    return read_base64(IV_LEN, KEY_LEN);
+}
+
+// 通用函数：读取指定部分的Base64编码
+std::string AESUtils::read_base64(size_t length, size_t offset) {
+    std::ifstream key_file(KEY_FILE, std::ios::binary);
+    if (!key_file) {
+        std::cerr << "无法打开密钥文件: " << KEY_FILE << std::endl;
+        return "";
+    }
+
+    // 跳过偏移量
+    key_file.seekg(offset);
+    if (!key_file) {
+        std::cerr << "无法定位到文件中的指定位置." << std::endl;
+        return "";
+    }
+
+    // 读取指定长度的数据
+    std::vector<unsigned char> data(length);
+    key_file.read(reinterpret_cast<char*>(data.data()), length);
+    if (!key_file) {
+        std::cerr << "无法读取文件中的数据." << std::endl;
+        return "";
+    }
+
+    // Base64编码
+    return base64_encode(data.data(), length);
+}
+
+// Base64编码
+std::string AESUtils::base64_encode(const unsigned char* data, size_t length) {
+    BIO* b64 = BIO_new(BIO_f_base64());
+    BIO* bio = BIO_new(BIO_s_mem());
+    bio = BIO_push(b64, bio);
+
+    BIO_set_flags(bio, BIO_FLAGS_BASE64_NO_NL); // 禁用换行符
+    BIO_write(bio, data, length);
+    BIO_flush(bio);
+
+    BUF_MEM* buffer_ptr;
+    BIO_get_mem_ptr(bio, &buffer_ptr);
+    BIO_set_close(bio, BIO_NOCLOSE);
+    BIO_free_all(bio);
+
+    return std::string(buffer_ptr->data, buffer_ptr->length);
+}
+
 // 加密文件
-void encrypt_file(const std::string& input_file) {
+void AESUtils::encrypt_file(std::string server_id) {
     //const unsigned int key_len = 32; // AES-256 key length
     //const unsigned int iv_len = 16;  // IV length
     unsigned char key[KEY_LEN], iv[IV_LEN];
@@ -48,6 +103,8 @@ void encrypt_file(const std::string& input_file) {
     key_file_stream.read(reinterpret_cast<char*>(iv), IV_LEN);
     key_file_stream.close();
 
+    std::string input_file = "dbs/watering_record.db";
+    
     // 打开输入文件
     std::ifstream infile(input_file, std::ios::binary);
     if (!infile) {
@@ -56,7 +113,7 @@ void encrypt_file(const std::string& input_file) {
     }
 
     // 打开输出文件
-    std::string output_file = input_file + ".enc";
+    std::string output_file = "temp/watering_record_" + server_id + "_encrypted.db";
     std::ofstream outfile(output_file, std::ios::binary);
     if (!outfile) {
         std::cerr << "无法新建输出文件." << std::endl;

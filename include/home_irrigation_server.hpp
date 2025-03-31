@@ -45,9 +45,9 @@ public:
     NetworkingThread* m_net_thread_obj;
 
     //Thread variables
-    std::thread* m_pump_thread;
-    std::thread* m_soil_moisture_thread;
-    std::thread* m_net_thread;
+    //std::thread* m_pump_thread;
+    //std::thread* m_soil_moisture_thread;
+    //std::thread* m_net_thread;
 
     int server_init();
 

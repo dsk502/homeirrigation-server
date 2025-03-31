@@ -3,6 +3,14 @@
 SoilMoistureThread::SoilMoistureThread(ADCHardware* adc_hardware, WateringRecordHelper* watering_record_helper) {
     adc_hardware_ptr = adc_hardware;
     watering_record_helper_ptr = watering_record_helper;
+    th = new std::thread(this->soil_moisture_thread_main);
+}
+
+SoilMoistureThread::~SoilMoistureThread() {
+    stop_thread = true;
+    th->join();
+    delete th;
+    th = nullptr;
 }
 
 int SoilMoistureThread::soil_moisture_thread_main() {

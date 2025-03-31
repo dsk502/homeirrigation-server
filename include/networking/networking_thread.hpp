@@ -4,6 +4,8 @@
 
 class NetworkingThread {
 public:
+    std::thread* th;
+
     int networking_thread_main(bool* is_added);
 
     

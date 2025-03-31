@@ -81,12 +81,14 @@ int HomeIrrigationServer::server_init() {
 
         //Start the pump thread
         m_pump_thread_obj = new PumpThread(m_watering_record_helper, m_adc_hardware);
-        m_pump_thread = new std::thread(m_pump_thread_obj->pump_thread_main, m_server_info->scheduled_freq, m_server_info->scheduled_time);
+        //m_pump_thread_obj->th = new std::thread(m_pump_thread_obj->pump_thread_main, m_server_info->scheduled_freq, m_server_info->scheduled_time);
+        //m_pump_thread = new std::thread(m_pump_thread_obj->pump_thread_main, m_server_info->scheduled_freq, m_server_info->scheduled_time);
         //m_pump_thread.detach();
 
         //Start the soil moisture thread
         m_soil_moisture_thread_obj = new SoilMoistureThread(m_adc_hardware, m_watering_record_helper);
-        m_soil_moisture_thread = new std::thread(m_soil_moisture_thread_obj->soil_moisture_thread_main);
+        m_soil_moisture_thread_obj->th = new std::thread(m_soil_moisture_thread_obj->soil_moisture_thread_main);
+        //m_soil_moisture_thread = new std::thread(m_soil_moisture_thread_obj->soil_moisture_thread_main);
         //m_soil_moisture_thread.detach();
 
     } else {    //If the device is not added

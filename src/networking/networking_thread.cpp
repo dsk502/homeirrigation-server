@@ -8,6 +8,7 @@
 #include "hardware_control/soil_moisture_thread.hpp"
 #include "database/server_info_database_helper.hpp"
 #include "crypto/rsa_utils.hpp"
+#include "crypto/aes_utils.hpp"
 
 #define ENCRYPTED_TAG (char)0x02
 #define UNENCRYPTED_TAG (char)0x01
@@ -120,7 +121,7 @@ int sendAll(int sock, const char* buf, int len) {
     return total;
 }
 
-int NetworkingThread::networking_thread_main(bool* is_added, server_info* server_info, ServerInfoDatabaseHelper* server_info_db_helper, WateringRecordHelper* watering_record_helper, PumpThread*& pump_thread_obj, std::thread*& pump_thread, SoilMoistureThread*& soil_moisture_thread_obj, std::thread*& soil_moisture_thread, std::string& server_pubkey, std::string& server_prikey) {    //pump_thread is a reference to the pointer pointing to PumpThread. This can pass the pointer by its address (the pointer of pointer).
+int NetworkingThread::networking_thread_main(bool* is_added, server_info* server_info, ServerInfoDatabaseHelper* server_info_db_helper, WateringRecordHelper* watering_record_helper, PumpThread*& pump_thread_obj, SoilMoistureThread*& soil_moisture_thread_obj, std::string& server_pubkey, std::string& server_prikey) {    //pump_thread is a reference to the pointer pointing to PumpThread. This can pass the pointer by its address (the pointer of pointer).
     std::string server_id;
 
     int server_fd, client_socket;
@@ -244,15 +245,15 @@ int NetworkingThread::networking_thread_main(bool* is_added, server_info* server
                 server_info->scheduled_time = new_scheduled_time;
 
                 //Restart the pump thread
-                pump_thread_obj->stop_thread = true;
-                pump_thread->join();
-                delete pump_thread;
-                pump_thread = nullptr;
+                // pump_thread_obj->stop_thread = true;
+                // pump_thread->join();
+                // delete pump_thread;
+                // pump_thread = nullptr;
                 delete pump_thread_obj;
                 pump_thread_obj = nullptr;
 
-                pump_thread_obj = new PumpThread();
-                pump_thread = new std::thread(pump_thread_obj->pump_thread_main, std::stod(water_amount), scheduled_freq, scheduled_time);
+                pump_thread_obj = new PumpThread(watering_record_helper, adc_hardware, std::stod(water_amount), scheduled_freq, scheduled_time);
+                //pump_thread = new std::thread(pump_thread_obj->pump_thread_main, std::stod(water_amount), scheduled_freq, scheduled_time);
 
                 //Reply "finish_edit_server"
                 std::string sending_message = "finish_edit_server()";
@@ -272,8 +273,40 @@ int NetworkingThread::networking_thread_main(bool* is_added, server_info* server
 
             } else if(recv_command == "download_stat"){
                 //Send the watering_record database file to the client
+
+                //Generate the aes key and iv
+                if(!AESUtils::is_key_file_exist()) {
+                    AESUtils::generate_key_iv();
+                }
+                //Read the aes key and iv
+                std::string key = AESUtils::read_key_base64();
+                std::string iv = AESUtils::read_iv_base64();
+
+                //Send the aes key to the client
+                std::string sending_message = "stat_key(" + key + "," + iv + ")";
+                int sending_bytes_len;
+                char* sending_bytes = pack_message(sending_message, true, &sending_bytes_len, server_info->client_pubkey);
+                send(client_socket, sending_bytes, sending_bytes_len, 0);
+
+                //Receive "stat_key_ok"
+                memset(receive_buffer, 0, sizeof(receive_buffer));
+                receive_len = read(client_socket, receive_buffer, 1024);
+                if(receive_buffer[0] == (char)0x01) {
+                    //Error: invalid message
+                }
+                received_message = unpack_unencrypted_message(receive_buffer, receive_len);
+                recv_command = extract_command(received_message);
+                if(recv_command != "stat_key_ok") {
+                    //Invalid message
+                }
+
+                //Encrypt the file
+                AESUtils::encrypt_file(server_id);
+
+
+
                 //Open the file to be sent
-                std::ifstream file(SERVER_INFO_DB_PATH, std::ios::binary | std::ios::ate);
+                std::ifstream file("temp/watering_record_" + server_id + "_encrypted.db", std::ios::binary | std::ios::ate);
                 if (!file) {
                     std::cerr << "Failed to open file" << std::endl;
                     //close(new_socket);
@@ -421,10 +454,10 @@ int NetworkingThread::networking_thread_main(bool* is_added, server_info* server
                     *is_added = true;
 
                     //Start pump control thread and soil moisture thread
-                    pump_thread_obj = new PumpThread();
-                    pump_thread = new std::thread(pump_thread_obj->pump_thread_main, std::stod(water_amount), scheduled_freq, scheduled_time);
+                    pump_thread_obj = new PumpThread(watering_record_helper, adc_hardware, std::stod(water_amount), scheduled_freq, scheduled_time);
+                    //pump_thread = new std::thread(pump_thread_obj->pump_thread_main, std::stod(water_amount), scheduled_freq, scheduled_time);
                     soil_moisture_thread_obj = new SoilMoistureThread();
-                    soil_moisture_thread = new std::thread(soil_moisture_thread_obj->soil_moisture_thread_main);
+                    //soil_moisture_thread = new std::thread(soil_moisture_thread_obj->soil_moisture_thread_main);
 
                 } else {
                     //Error: device already added

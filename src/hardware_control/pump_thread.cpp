@@ -1,8 +1,17 @@
 #include "hardware_control/pump_thread.hpp"
 
-PumpThread::PumpThread(WateringRecordHelper* watering_record_helper, ADCHardware* adc_hardware) {
+PumpThread::PumpThread(WateringRecordHelper* watering_record_helper, ADCHardware* adc_hardware, double water_amount, std::string scheduled_freq, std::string scheduled_time) {
     watering_record_helper_ptr = watering_record_helper;
     adc_hardware_ptr = adc_hardware;
+    th = new std::thread(this->pump_thread_main, water_amount, scheduled_freq, scheduled_time);
+}
+
+PumpThread::~PumpThread() {
+    //stop the thread
+    stop_thread = true;
+    th->join();
+    delete th;
+    th = nullptr;
 }
 
 int PumpThread::pump_thread_main(double water_amount, std::string scheduled_freq, std::string scheduled_time) {
