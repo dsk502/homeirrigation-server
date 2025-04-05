@@ -6,6 +6,7 @@
 #include <vector>
 #include <openssl/evp.h>
 #include <openssl/rand.h>
+#include <openssl/buffer.h>
 
 class AESUtils {
 public:
