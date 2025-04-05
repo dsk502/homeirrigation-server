@@ -1,5 +1,4 @@
 #include "hardware_control/soil_moisture_thread.hpp"
-#include "soil_moisture_thread.hpp"
 
 SoilMoistureThread::SoilMoistureThread(ADCHardware* adc_hardware, WateringRecordHelper* watering_record_helper) {
     adc_hardware_ptr = adc_hardware;
