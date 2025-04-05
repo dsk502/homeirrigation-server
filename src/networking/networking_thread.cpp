@@ -16,7 +16,7 @@
 //std::string server_prikey;
 //Char array copy method similar to Java's System.arraycopy()
 
-void char_array_copy(const char* src, int src_pos, char* dest, int dest_pos, int len) {
+void NetworkingThread::char_array_copy(const char* src, int src_pos, char* dest, int dest_pos, int len) {
     for(int i = dest_pos; i < dest_pos + len; i++) {
         dest[i] = src[i + src_pos - dest_pos];
     }
@@ -24,7 +24,7 @@ void char_array_copy(const char* src, int src_pos, char* dest, int dest_pos, int
 
 //Find the index of a character in a char array
 
-int find_char_index(char* char_array, int char_array_len, char ch) {
+int NetworkingThread::find_char_index(char* char_array, int char_array_len, char ch) {
     for(int i = 0; i < char_array_len; i++) {
         if(char_array[i] == ch) {
             return i;
@@ -33,7 +33,7 @@ int find_char_index(char* char_array, int char_array_len, char ch) {
     return -1;
 }
 
-std::string unpack_unencrypted_message(char* receive_buffer, int receive_len) {
+std::string NetworkingThread::unpack_unencrypted_message(char* receive_buffer, int receive_len) {
     int end_tag_index = find_char_index(receive_buffer, receive_len, '\n');
     if(end_tag_index == -1) {
         return "";
@@ -45,19 +45,19 @@ std::string unpack_unencrypted_message(char* receive_buffer, int receive_len) {
     return unpacked_message;
 }
 
-std::string unpack_encrypted_message(char* receive_buffer, int receive_len, std::string key_for_decryption) {
+std::string NetworkingThread::unpack_encrypted_message(char* receive_buffer, int receive_len) {
     std::string message_cipher = unpack_unencrypted_message(receive_buffer, receive_len);
-    RSA* server_prikey_loaded = RSAUtils::load_base64_der_private_key(key_for_decryption);
+    RSA* server_prikey_loaded = RSAUtils::load_base64_der_server_prikey();
     std::string message_pt = RSAUtils::rsa_decrypt(message_cipher, server_prikey_loaded);
     //std::string message_pt = "";
     return message_pt;
 }
 
-char* pack_message(std::string message, bool is_encrypted, int* packed_bytes_len_ret, std::string key_for_encryption) {
+char* NetworkingThread::pack_message(std::string message, bool is_encrypted, int* packed_bytes_len_ret, std::string client_pubkey) {
     int packed_bytes_len = message.length() + 2;
     char* packed_bytes = new char[packed_bytes_len];
     if(is_encrypted) {
-        RSA* client_pubkey_loaded = RSAUtils::load_base64_der_public_key(key_for_encryption);
+        RSA* client_pubkey_loaded = RSAUtils::load_base64_der_client_pubkey(client_pubkey);
         std::string encrypted_message = RSAUtils::rsa_encrypt(client_pubkey_loaded, message);
         char_array_copy(encrypted_message.c_str(), 0, packed_bytes, 1, encrypted_message.length());
         packed_bytes[0] = ENCRYPTED_TAG;
@@ -70,7 +70,7 @@ char* pack_message(std::string message, bool is_encrypted, int* packed_bytes_len
     return packed_bytes;
 }
 
-std::string extract_command(std::string message_pt) {
+std::string NetworkingThread::extract_command(std::string message_pt) {
     std::string result;
 
     // 查找 '(' 的位置
@@ -86,7 +86,7 @@ std::string extract_command(std::string message_pt) {
     return result;
 }
 
-std::vector<std::string> extract_params(std::string message_pt) {
+std::vector<std::string> NetworkingThread::extract_params(std::string message_pt) {
     std::vector<std::string> params;
 
     // 查找 '(' 和 ')' 的位置
@@ -111,7 +111,7 @@ std::vector<std::string> extract_params(std::string message_pt) {
 }
 
 // Ensure all data is sent
-int sendAll(int sock, const char* buf, int len) {
+int NetworkingThread::sendAll(int sock, const char* buf, int len) {
     int total = 0;
     while (total < len) {
         int sent = send(sock, buf + total, len - total, 0);
@@ -121,10 +121,26 @@ int sendAll(int sock, const char* buf, int len) {
     return total;
 }
 
-int NetworkingThread::networking_thread_main(bool* is_added, server_info* server_info, ServerInfoDatabaseHelper* server_info_db_helper, WateringRecordHelper* watering_record_helper, PumpThread*& pump_thread_obj, SoilMoistureThread*& soil_moisture_thread_obj, std::string& server_pubkey, std::string& server_prikey) {    //pump_thread is a reference to the pointer pointing to PumpThread. This can pass the pointer by its address (the pointer of pointer).
-    std::string server_id;
+NetworkingThread::NetworkingThread(ServerInfoDatabaseHelper* server_info_db_helper, WateringRecordHelper* watering_record_helper, bool* is_added, std::string server_id, server_info* server_info, PumpThread*& pump_thread_obj, SoilMoistureThread*& soil_moisture_thread_obj) {
+    this->server_info_db_helper_ptr = server_info_db_helper;
+    this->watering_record_helper_ptr = watering_record_helper;
+    th = new std::thread(this->networking_thread_main, bool* is_added, std::string server_id, server_info* server_info, PumpThread*& pump_thread_obj, SoilMoistureThread*& soil_moisture_thread_obj);
+}
 
-    int server_fd, client_socket;
+NetworkingThread::~NetworkingThread() {
+    //stop_thread = true;
+    close(client_socket);
+    close(server_fd);
+    th->join();
+    delete th;
+    th = nullptr;
+}
+
+int NetworkingThread::networking_thread_main(bool* is_added, std::string server_id, server_info* server_info, PumpThread*& pump_thread_obj, SoilMoistureThread*& soil_moisture_thread_obj) {    //pump_thread is a reference to the pointer pointing to PumpThread. This can pass the pointer by its address (the pointer of pointer).
+    //Read server id
+    //std::string server_id = ;
+
+    //int server_fd, client_socket;
     struct sockaddr_in address;
     int addrlen = sizeof(address);
     char receive_buffer[1024] = {0};
@@ -133,14 +149,16 @@ int NetworkingThread::networking_thread_main(bool* is_added, server_info* server
     // 创建TCP套接字
     if ((server_fd = socket(AF_INET, SOCK_STREAM, 0)) == 0) {
         perror("socket failed");
-        exit(EXIT_FAILURE);
+        //exit(EXIT_FAILURE);
+        return -1;
     }
 
     // Forcefully attaching socket to the port 8080
     int opt = 1;
     if (setsockopt(server_fd, SOL_SOCKET, SO_REUSEADDR | SO_REUSEPORT, &opt, sizeof(opt))) {
         perror("Setsockopt failed");
-        exit(EXIT_FAILURE);
+        //exit(EXIT_FAILURE);
+        return -1;
     }
 
     // 设置服务器地址和端口
@@ -151,13 +169,15 @@ int NetworkingThread::networking_thread_main(bool* is_added, server_info* server
     // 绑定套接字到地址和端口
     if (bind(server_fd, (struct sockaddr*)&address, sizeof(address)) < 0) {
         perror("bind failed");
-        exit(EXIT_FAILURE);
+        //exit(EXIT_FAILURE);
+        return -1;
     }
 
     // 开始监听
     if (listen(server_fd, 3) < 0) {
         perror("listen");
-        exit(EXIT_FAILURE);
+        //exit(EXIT_FAILURE);
+        return -1;
     }
 
     std::cout << "Server listening on port 8080..." << std::endl;
@@ -166,13 +186,12 @@ int NetworkingThread::networking_thread_main(bool* is_added, server_info* server
         // 接受客户端连接
         if ((client_socket = accept(server_fd, (struct sockaddr*)&address, (socklen_t*)&addrlen)) < 0) {
             perror("accept");
-            exit(EXIT_FAILURE);
+            //exit(EXIT_FAILURE);
+            return -1;
         }
 
         std::cout << "Client connected." << std::endl;
 
-        // 循环接收和发送消息
-        //while (true) {
         memset(receive_buffer, 0, sizeof(receive_buffer));  // 清空缓冲区
         int receive_len = read(client_socket, receive_buffer, 1024);   //The data from client will be in buffer
         if (receive_len <= 0) {
@@ -183,7 +202,7 @@ int NetworkingThread::networking_thread_main(bool* is_added, server_info* server
         //Process the data from buffer
         if(receive_buffer[0] == ENCRYPTED_TAG) {   //Encrypted message
            
-            std::string received_message = unpack_encrypted_message(receive_buffer, receive_len, server_prikey);
+            std::string received_message = unpack_encrypted_message(receive_buffer, receive_len);
             std::string recv_command = extract_command(received_message);
             
             if(recv_command == "delete_device") {
@@ -294,7 +313,7 @@ int NetworkingThread::networking_thread_main(bool* is_added, server_info* server
                 if(receive_buffer[0] == (char)0x01) {
                     //Error: invalid message
                 }
-                received_message = unpack_unencrypted_message(receive_buffer, receive_len);
+                received_message = unpack_encrypted_message(receive_buffer, receive_len);
                 recv_command = extract_command(received_message);
                 if(recv_command != "stat_key_ok") {
                     //Invalid message
@@ -376,7 +395,7 @@ int NetworkingThread::networking_thread_main(bool* is_added, server_info* server
                     //Reply "key_exchange_server(server_id)"
                     std::string sending_message = "key_exchange_server(" + server_id + ")";
                     int sending_bytes_len;
-                    char* sending_bytes = pack_message(sending_message, false, &sending_bytes_len);
+                    char* sending_bytes = pack_message(sending_message, false, &sending_bytes_len, server_info->client_pubkey);
                     send(client_socket, sending_bytes, sending_bytes_len, 0);
 
                     //Receive "key_exchange_client(client_pubkey)"

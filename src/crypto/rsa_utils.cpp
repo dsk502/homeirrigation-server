@@ -50,8 +50,23 @@ std::string RSAUtils::base64_encode(const unsigned char* data, size_t length)
     return base64_data;
 }
 
-// 生成DER格式并Base64编码的密钥对
-std::pair<std::string, std::string> RSAUtils::generate_der_base64_key_pair(int bits = 2048)
+//Determine whether keypair files exist on the disk
+//If one of them does not exist, then return false.
+bool RSAUtils::is_keypair_exist() {
+    std::ifstream prikey_file(SERVER_PRIKEY_FILE);
+    std::ifstream pubkey_file(SERVER_PUBKEY_FILE);
+    if(prikey_file.is_open() && pubkey_file.is_open()) {
+        prikey_file.close();
+        pubkey_file.close();
+        return true;
+    } else {
+        prikey_file.close();
+        pubkey_file.close();
+        return false;
+    }
+}
+//Generate the key pair and store the base64-encoded der format to the files
+int RSAUtils::generate_der_base64_key_pair(int bits = 2048)
 {
     RSA* rsa = RSA_generate_key(bits, RSA_F4, nullptr, nullptr);
     if (!rsa)
@@ -76,12 +91,32 @@ std::pair<std::string, std::string> RSAUtils::generate_der_base64_key_pair(int b
 
     RSA_free(rsa);
 
-    return {base64_private_key, base64_public_key};
+    //Write the key pair to the files
+    std::ofstream private_key_file(SERVER_PRIKEY_FILE);
+    private_key_file << base64_private_key;
+    private_key_file.close();
+    std::ofstream public_key_file(SERVER_PUBKEY_FILE);
+    public_key_file << base64_public_key;
+    public_key_file.close();
+
+    return 0;
 }
 
-// 加载Base64编码的DER格式公钥
-RSA* RSAUtils::load_base64_der_public_key(const std::string& base64_pubkey)
+//Load base64-encoded server public key from file
+RSA* RSAUtils::load_base64_der_server_pubkey()
 {
+    //Read the base64 string from file
+    std::ifstream public_key_file(SERVER_PUBKEY_FILE);
+    std::string base64_pubkey;
+    if (std::getline(public_key_file, base64_pubkey)) { // 读取第一行
+        public_key_file.close();
+    } else {
+        public_key_file.close();
+        std::cerr << "Failed to read the file" << std::endl;
+        return nullptr;
+    }
+
+    //Convert base64 string into RSA format
     std::vector<unsigned char> der_pubkey = base64_decode(base64_pubkey);
     if (der_pubkey.empty())
     {
@@ -99,9 +134,21 @@ RSA* RSAUtils::load_base64_der_public_key(const std::string& base64_pubkey)
     return rsa;
 }
 
-// 加载Base64编码的DER格式私钥
-RSA* RSAUtils::load_base64_der_private_key(const std::string& base64_privatekey)
+//Load base64-encoded server private key from file
+RSA* RSAUtils::load_base64_der_server_prikey()
 {
+    //Read the base64 string from file
+    std::ifstream private_key_file(SERVER_PRIKEY_FILE);
+    std::string base64_privatekey;
+    if (std::getline(private_key_file, base64_privatekey)) { // 读取第一行
+        private_key_file.close();
+    } else {
+        private_key_file.close();
+        std::cerr << "Failed to read the file" << std::endl;
+        return nullptr;
+    }
+
+    //Convert base64 string into RSA format
     std::vector<unsigned char> der_privatekey = base64_decode(base64_privatekey);
     if (der_privatekey.empty())
     {
@@ -111,6 +158,26 @@ RSA* RSAUtils::load_base64_der_private_key(const std::string& base64_privatekey)
 
     const unsigned char* der_ptr = der_privatekey.data();
     RSA* rsa = d2i_RSAPrivateKey(nullptr, &der_ptr, der_privatekey.size());
+    if (!rsa)
+    {
+        print_openssl_error();
+        return nullptr;
+    }
+    return rsa;
+}
+
+//Load client public key from string
+RSA* RSAUtils::load_base64_der_client_pubkey(std::string key_str) {
+
+    std::vector<unsigned char> der_pubkey = base64_decode(key_str);
+    if (der_pubkey.empty())
+    {
+        std::cerr << "Failed to decode Base64 DER public key." << std::endl;
+        return nullptr;
+    }
+
+    const unsigned char* der_ptr = der_pubkey.data();
+    RSA* rsa = d2i_RSA_PUBKEY(nullptr, &der_ptr, der_pubkey.size());
     if (!rsa)
     {
         print_openssl_error();
@@ -243,26 +310,4 @@ std::string RSAUtils::read_key_from_file(bool is_pubkey) {
         std::cerr << "Failed to read the file" << std::endl;
         return "";
     }
-}
-
-int RSAUtils::write_key_to_file(bool is_pubkey, std:string key) {
-    std::ofstream key_file;
-    if(is_pubkey) {
-        key_file = std::ofstream("keys/server_pubkey.der")
-    } else {
-        key_file = std::ofstream("keys/server_prikey.der")
-    }
-
-    if (!key_file.is_open()) {
-        std::cerr << "Failed to open the file" << std::endl;
-        return -1;
-    }
-
-    // 写入新的第一行内容
-    key_file << key;
-
-    // 关闭文件
-    key_file.close();
-
-    return 0;
 }

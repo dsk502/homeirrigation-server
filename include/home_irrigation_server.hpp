@@ -5,7 +5,7 @@
 #include "database/sqlite_database.hpp"
 #include "database/server_info_database_helper.hpp"
 #include "database/watering_record_helper.hpp"
-
+#include "crypto/rsa_utils.hpp"
 #include "networking/networking_thread.hpp"
 
 #include <iostream>
@@ -33,8 +33,8 @@ public:
     WateringRecordHelper* m_watering_record_helper;
 
     //Server keys
-    std::string m_server_pubkey;
-    std::string m_server_prikey;
+    //std::string m_server_pubkey;
+    //std::string m_server_prikey;
     
     //Server info
     server_info* m_server_info;

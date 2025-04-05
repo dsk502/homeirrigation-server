@@ -38,7 +38,7 @@ int HomeIrrigationServer::server_init() {
     //2. Check if server_id file exists
     //If yes, read the server id; If not, generate the file
     std::ifstream server_id_file_read("server_id.txt");
-    if (server_id_file_read) {
+    if (server_id_file_read.is_open()) {
         std::cout << "Server id file exist" << std::endl;
         std::getline(server_id_file_read, m_server_id);
         server_id_file_read.close();
@@ -51,7 +51,7 @@ int HomeIrrigationServer::server_init() {
         server_id_file_write.close();
     }
 
-    //3. Init the server_info database if there is nothing in it.
+    //3. Init the server info database if there is nothing in it.
     m_server_info_database_helper = new ServerInfoDatabaseHelper();
     m_server_info_database_helper->create_table_if_not_exist();
 
@@ -75,9 +75,10 @@ int HomeIrrigationServer::server_init() {
         //Read the server info record (client_pubkey is in it)
         m_server_info = m_server_info_database_helper->get_server_info();
         
-        //Read the keys
-        m_server_pubkey = RSAUtils::read_key_from_file(true);
-        m_server_prikey = RSAUtils::read_key_from_file(false);
+        //Generate the RSA keypair (server)
+        if(!RSAUtils::is_keypair_exist()) {
+            RSAUtils::generate_der_base64_key_pair();
+        }
 
         //Start the pump thread
         m_pump_thread_obj = new PumpThread(m_watering_record_helper, m_adc_hardware);

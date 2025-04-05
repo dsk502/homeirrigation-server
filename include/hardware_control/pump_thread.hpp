@@ -22,7 +22,7 @@ public:
     bool stop_thread = false;
     std::thread* th;
 
-    PumpThread(WateringRecordHelper* watering_record_helper, ADCHardware* adc_hardware, std::string water_amount, std::string scheduled_freq,std::string scheduled_time);
+    PumpThread(WateringRecordHelper* watering_record_helper, ADCHardware* adc_hardware, double water_amount, std::string scheduled_freq,std::string scheduled_time);
     ~PumpThread();
 
     int run_pump(double water_amount, std::chrono::system_clock::time_point now);

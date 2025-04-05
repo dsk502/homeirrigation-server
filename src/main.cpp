@@ -59,8 +59,6 @@ int main() {
     */
     HomeIrrigationServer* server = new HomeIrrigationServer();
     server->server_init();
-    while(true) {
-        
-    }
+    
     return 0;
 }

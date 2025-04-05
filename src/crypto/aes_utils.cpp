@@ -4,7 +4,7 @@
 #define IV_LEN 16
 #define KEY_FILE "keys/aes.key"
 
-// 生成密钥和IV，并保存到文件
+//Generate AES key and IV, and save to file
 void AESUtils::generate_key_iv() {
     //const unsigned int key_len = 32; // AES-256 key length
     //const unsigned int iv_len = 16;  // IV length
@@ -32,17 +32,17 @@ bool AESUtils::is_key_file_exist() {
     return key_file.good();
 }
 
-// 读取密钥的Base64编码形式
+//Read base64-encoded key from file to string
 std::string AESUtils::read_key_base64() {
     return read_base64(KEY_LEN, 0);
 }
 
-// 读取IV的Base64编码形式
+//Read base64-encoded IV from file to string
 std::string AESUtils::read_iv_base64() {
     return read_base64(IV_LEN, KEY_LEN);
 }
 
-// 通用函数：读取指定部分的Base64编码
+//Read base64
 std::string AESUtils::read_base64(size_t length, size_t offset) {
     std::ifstream key_file(KEY_FILE, std::ios::binary);
     if (!key_file) {
