@@ -13,6 +13,7 @@ public:
     std::thread* th;
 
     SoilMoistureThread(ADCHardware* adc_hardware, WateringRecordHelper* watering_record_helper);
+    void create_thread();
     ~SoilMoistureThread();
     
     int soil_moisture_thread_main();

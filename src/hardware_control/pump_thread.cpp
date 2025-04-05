@@ -1,12 +1,18 @@
 #include "hardware_control/pump_thread.hpp"
+#include "pump_thread.hpp"
 
-PumpThread::PumpThread(WateringRecordHelper* watering_record_helper, ADCHardware* adc_hardware, server_info* server_information) {
+PumpThread::PumpThread(WateringRecordHelper* watering_record_helper, ADCHardware* adc_hardware) {
     watering_record_helper_ptr = watering_record_helper;
     adc_hardware_ptr = adc_hardware;
-    th = new std::thread(this->pump_thread_main, server_information);
+    
 }
 
-PumpThread::~PumpThread() {
+void PumpThread::create_thread(server_info* server_information)
+{
+    th = new std::thread(this->pump_thread_main, server_information);
+}
+PumpThread::~PumpThread()
+{
     //stop the thread
     stop_thread = true;
     th->join();

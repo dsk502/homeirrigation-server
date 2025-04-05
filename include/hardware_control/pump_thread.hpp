@@ -25,7 +25,8 @@ public:
     bool stop_thread = false;
     std::thread* th;
 
-    PumpThread(WateringRecordHelper* watering_record_helper, ADCHardware* adc_hardware, server_info* server_information);
+    PumpThread(WateringRecordHelper* watering_record_helper, ADCHardware* adc_hardware);
+    void create_thread(server_info* server_information);
     ~PumpThread();
 
     int run_pump(double water_amount, std::chrono::system_clock::time_point now);

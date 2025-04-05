@@ -1,5 +1,6 @@
 
 #include "networking/networking_thread.hpp"
+#include "networking_thread.hpp"
 
 
 #define ENCRYPTED_TAG (char)0x02
@@ -113,13 +114,18 @@ int NetworkingThread::sendAll(int sock, const char* buf, int len) {
     return total;
 }
 
-NetworkingThread::NetworkingThread(ServerInfoDatabaseHelper* server_info_db_helper, WateringRecordHelper* watering_record_helper, bool* is_added, std::string server_id, server_info* server_info, PumpThread*& pump_thread_obj, SoilMoistureThread*& soil_moisture_thread_obj) {
+NetworkingThread::NetworkingThread(ServerInfoDatabaseHelper* server_info_db_helper, WateringRecordHelper* watering_record_helper, ADCHardware* adc_hardware) {
     this->server_info_db_helper_ptr = server_info_db_helper;
     this->watering_record_helper_ptr = watering_record_helper;
+    this->adc_hardware_ptr = adc_hardware;
+}
+
+void NetworkingThread::create_thread(bool* is_added, std::string server_id, server_info* server_info, PumpThread*& pump_thread_obj, SoilMoistureThread*& soil_moisture_thread_obj) {
     th = new std::thread(this->networking_thread_main, bool* is_added, std::string server_id, server_info* server_info, PumpThread*& pump_thread_obj, SoilMoistureThread*& soil_moisture_thread_obj);
 }
 
-NetworkingThread::~NetworkingThread() {
+NetworkingThread::~NetworkingThread()
+{
     //stop_thread = true;
     close(client_socket);
     close(server_fd);
@@ -204,20 +210,24 @@ int NetworkingThread::networking_thread_main(bool* is_added, std::string server_
                     server_info_db_helper->clear_server_info();
 
                     //Exit the pump control thread
-                    pump_thread_obj->stop_thread = true;
-                    pump_thread->join();
-                    delete pump_thread;
-                    pump_thread = nullptr;
+                    //pump_thread_obj->stop_thread = true;
+                    //pump_thread->join();
                     delete pump_thread_obj;
-                    pump_thread_obj = nullptr;
+                    //pump_thread = nullptr;
+                    //delete pump_thread_obj;
+                    //pump_thread_obj = nullptr;
+                    pump_thread_obj = new PumpThread(watering_record_helper_ptr, adc_hardware_ptr);
+                    pump_thread_obj->create_thread(server_info);
 
                     //Exit the soil moisture thread
-                    soil_moisture_thread_obj->stop_thread = true;
-                    soil_moisture_thread->join();
-                    delete soil_moisture_thread;
-                    soil_moisture_thread = nullptr;
+                    //soil_moisture_thread_obj->stop_thread = true;
+                    //soil_moisture_thread->join();
                     delete soil_moisture_thread_obj;
-                    soil_moisture_thread_obj = nullptr;
+                    //soil_moisture_thread = nullptr;
+                    //delete soil_moisture_thread_obj;
+                    //soil_moisture_thread_obj = nullptr;
+                    soil_moisture_thread_obj = new SoilMoistureThread(adc_hardware_ptr, watering_record_helper_ptr);
+                    
 
                     //Clear watering info
                     watering_record_helper->clear_record();

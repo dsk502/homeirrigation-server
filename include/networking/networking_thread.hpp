@@ -12,6 +12,7 @@
 #include <sstream>
 #include <string>
 #include "hardware_control/pump_thread.hpp"
+#include "hardware_control/adc_hardware.hpp"
 
 class NetworkingThread {
 public:
@@ -20,11 +21,13 @@ public:
 
     int networking_thread_main(bool* is_added, std::string server_id, server_info* server_info, PumpThread*& pump_thread_obj, SoilMoistureThread*& soil_moisture_thread_obj);
     
-    NetworkingThread(ServerInfoDatabaseHelper* server_info_db_helper, WateringRecordHelper* watering_record_helper, bool* is_added, std::string server_id, server_info* server_info, PumpThread*& pump_thread_obj, SoilMoistureThread*& soil_moisture_thread_obj);
+    NetworkingThread(ServerInfoDatabaseHelper* server_info_db_helper, WateringRecordHelper* watering_record_helper, ADCHardware* adc_hardware);
+    void create_thread(bool* is_added, std::string server_id, server_info* server_info, PumpThread*& pump_thread_obj, SoilMoistureThread*& soil_moisture_thread_obj);
     ~NetworkingThread();
 
 private:
     WateringRecordHelper* watering_record_helper_ptr;
+    ADCHardware* adc_hardware_ptr;
     ServerInfoDatabaseHelper* server_info_db_helper_ptr;
 
     int server_fd;
