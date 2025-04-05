@@ -1,6 +1,8 @@
 
 #include "crypto/rsa_utils.hpp"
 
+
+
 // 打印OpenSSL错误信息
 void print_openssl_error()
 {
@@ -50,51 +52,95 @@ std::string RSAUtils::base64_encode(const unsigned char* data, size_t length)
     return base64_data;
 }
 
-//Determine whether keypair files exist on the disk
-//If one of them does not exist, then return false.
-bool RSAUtils::is_keypair_exist() {
+// Determine whether keypair files exist on the disk
+bool RSAUtils::is_keypair_exist()
+{
     std::ifstream prikey_file(SERVER_PRIKEY_FILE);
     std::ifstream pubkey_file(SERVER_PUBKEY_FILE);
-    if(prikey_file.is_open() && pubkey_file.is_open()) {
+    if (prikey_file.is_open() && pubkey_file.is_open())
+    {
         prikey_file.close();
         pubkey_file.close();
         return true;
-    } else {
+    }
+    else
+    {
         prikey_file.close();
         pubkey_file.close();
         return false;
     }
 }
-//Generate the key pair and store the base64-encoded der format to the files
-int RSAUtils::generate_der_base64_key_pair(int bits = 2048)
+
+// Generate the key pair and store the base64-encoded der format to the files
+int RSAUtils::generate_der_base64_key_pair(int bits)
 {
-    RSA* rsa = RSA_generate_key(bits, RSA_F4, nullptr, nullptr);
-    if (!rsa)
+    EVP_PKEY_CTX* ctx = EVP_PKEY_CTX_new_id(EVP_PKEY_RSA, nullptr);
+    if (!ctx)
     {
+        print_openssl_error();
+        throw std::runtime_error("Failed to create EVP_PKEY_CTX.");
+    }
+
+    if (EVP_PKEY_keygen_init(ctx) <= 0)
+    {
+        EVP_PKEY_CTX_free(ctx);
+        print_openssl_error();
+        throw std::runtime_error("Failed to initialize key generation.");
+    }
+
+    if (EVP_PKEY_CTX_set_rsa_keygen_bits(ctx, bits) <= 0)
+    {
+        EVP_PKEY_CTX_free(ctx);
+        print_openssl_error();
+        throw std::runtime_error("Failed to set RSA keygen bits.");
+    }
+
+    EVP_PKEY* pkey = nullptr;
+    if (EVP_PKEY_keygen(ctx, &pkey) <= 0)
+    {
+        EVP_PKEY_CTX_free(ctx);
         print_openssl_error();
         throw std::runtime_error("Failed to generate RSA key pair.");
     }
+    EVP_PKEY_CTX_free(ctx);
 
     // 获取私钥（DER格式）
-    std::vector<unsigned char> der_private_key(i2d_RSAPrivateKey(rsa, nullptr));
-    unsigned char* p = der_private_key.data();
-    i2d_RSAPrivateKey(rsa, &p);
+    std::vector<unsigned char> der_private_key;
+    unsigned char* der_private = nullptr;
+    int der_private_len = i2d_PrivateKey(pkey, &der_private);
+    if (der_private_len <= 0)
+    {
+        EVP_PKEY_free(pkey);
+        print_openssl_error();
+        throw std::runtime_error("Failed to convert private key to DER format.");
+    }
+    der_private_key.assign(der_private, der_private + der_private_len);
+    OPENSSL_free(der_private);
 
     // 获取公钥（DER格式）
-    std::vector<unsigned char> der_public_key(i2d_RSA_PUBKEY(rsa, nullptr));
-    p = der_public_key.data();
-    i2d_RSA_PUBKEY(rsa, &p);
+    std::vector<unsigned char> der_public_key;
+    unsigned char* der_public = nullptr;
+    int der_public_len = i2d_PUBKEY(pkey, &der_public);
+    if (der_public_len <= 0)
+    {
+        EVP_PKEY_free(pkey);
+        print_openssl_error();
+        throw std::runtime_error("Failed to convert public key to DER format.");
+    }
+    der_public_key.assign(der_public, der_public + der_public_len);
+    OPENSSL_free(der_public);
+
+    EVP_PKEY_free(pkey);
 
     // Base64编码
     std::string base64_private_key = base64_encode(der_private_key.data(), der_private_key.size());
     std::string base64_public_key = base64_encode(der_public_key.data(), der_public_key.size());
 
-    RSA_free(rsa);
-
-    //Write the key pair to the files
+    // Write the key pair to the files
     std::ofstream private_key_file(SERVER_PRIKEY_FILE);
     private_key_file << base64_private_key;
     private_key_file.close();
+
     std::ofstream public_key_file(SERVER_PUBKEY_FILE);
     public_key_file << base64_public_key;
     public_key_file.close();
@@ -102,21 +148,24 @@ int RSAUtils::generate_der_base64_key_pair(int bits = 2048)
     return 0;
 }
 
-//Load base64-encoded server public key from file
+// Load base64-encoded server public key from file
 RSA* RSAUtils::load_base64_der_server_pubkey()
 {
-    //Read the base64 string from file
+    // Read the base64 string from file
     std::ifstream public_key_file(SERVER_PUBKEY_FILE);
     std::string base64_pubkey;
-    if (std::getline(public_key_file, base64_pubkey)) { // 读取第一行
+    if (std::getline(public_key_file, base64_pubkey)) // 读取第一行
+    {
         public_key_file.close();
-    } else {
+    }
+    else
+    {
         public_key_file.close();
         std::cerr << "Failed to read the file" << std::endl;
         return nullptr;
     }
 
-    //Convert base64 string into RSA format
+    // Convert base64 string into RSA format
     std::vector<unsigned char> der_pubkey = base64_decode(base64_pubkey);
     if (der_pubkey.empty())
     {
@@ -125,30 +174,36 @@ RSA* RSAUtils::load_base64_der_server_pubkey()
     }
 
     const unsigned char* der_ptr = der_pubkey.data();
-    RSA* rsa = d2i_RSA_PUBKEY(nullptr, &der_ptr, der_pubkey.size());
-    if (!rsa)
+    EVP_PKEY* pkey = d2i_PUBKEY(nullptr, &der_ptr, der_pubkey.size());
+    if (!pkey)
     {
         print_openssl_error();
         return nullptr;
     }
+
+    RSA* rsa = EVP_PKEY_get1_RSA(pkey);
+    EVP_PKEY_free(pkey);
     return rsa;
 }
 
-//Load base64-encoded server private key from file
+// Load base64-encoded server private key from file
 RSA* RSAUtils::load_base64_der_server_prikey()
 {
-    //Read the base64 string from file
+    // Read the base64 string from file
     std::ifstream private_key_file(SERVER_PRIKEY_FILE);
     std::string base64_privatekey;
-    if (std::getline(private_key_file, base64_privatekey)) { // 读取第一行
+    if (std::getline(private_key_file, base64_privatekey)) // 读取第一行
+    {
         private_key_file.close();
-    } else {
+    }
+    else
+    {
         private_key_file.close();
         std::cerr << "Failed to read the file" << std::endl;
         return nullptr;
     }
 
-    //Convert base64 string into RSA format
+    // Convert base64 string into RSA format
     std::vector<unsigned char> der_privatekey = base64_decode(base64_privatekey);
     if (der_privatekey.empty())
     {
@@ -157,18 +212,21 @@ RSA* RSAUtils::load_base64_der_server_prikey()
     }
 
     const unsigned char* der_ptr = der_privatekey.data();
-    RSA* rsa = d2i_RSAPrivateKey(nullptr, &der_ptr, der_privatekey.size());
-    if (!rsa)
+    EVP_PKEY* pkey = d2i_PrivateKey(nullptr, &der_ptr, der_privatekey.size());
+    if (!pkey)
     {
         print_openssl_error();
         return nullptr;
     }
+
+    RSA* rsa = EVP_PKEY_get1_RSA(pkey);
+    EVP_PKEY_free(pkey);
     return rsa;
 }
 
-//Load client public key from string
-RSA* RSAUtils::load_base64_der_client_pubkey(std::string key_str) {
-
+// Load client public key from string
+RSA* RSAUtils::load_base64_der_client_pubkey(std::string key_str)
+{
     std::vector<unsigned char> der_pubkey = base64_decode(key_str);
     if (der_pubkey.empty())
     {
@@ -177,29 +235,76 @@ RSA* RSAUtils::load_base64_der_client_pubkey(std::string key_str) {
     }
 
     const unsigned char* der_ptr = der_pubkey.data();
-    RSA* rsa = d2i_RSA_PUBKEY(nullptr, &der_ptr, der_pubkey.size());
-    if (!rsa)
+    EVP_PKEY* pkey = d2i_PUBKEY(nullptr, &der_ptr, der_pubkey.size());
+    if (!pkey)
     {
         print_openssl_error();
         return nullptr;
     }
+
+    RSA* rsa = EVP_PKEY_get1_RSA(pkey);
+    EVP_PKEY_free(pkey);
     return rsa;
 }
 
 // RSA加密
 std::string RSAUtils::rsa_encrypt(RSA* rsa, const std::string& data)
 {
-    int rsa_size = RSA_size(rsa);
-    std::vector<unsigned char> encrypted_data(rsa_size);
-
-    int result = RSA_public_encrypt(data.size(), reinterpret_cast<const unsigned char*>(data.data()), encrypted_data.data(), rsa, RSA_PKCS1_PADDING);
-    if (result == -1)
+    EVP_PKEY* pkey = EVP_PKEY_new_RSA(rsa, nullptr);
+    if (!pkey)
     {
         print_openssl_error();
         return "";
     }
 
-    encrypted_data.resize(result);
+    int rsa_size = EVP_PKEY_size(pkey);
+    std::vector<unsigned char> encrypted_data(rsa_size);
+
+    EVP_PKEY_CTX* ctx = EVP_PKEY_CTX_new(pkey, nullptr);
+    if (!ctx)
+    {
+        EVP_PKEY_free(pkey);
+        print_openssl_error();
+        return "";
+    }
+
+    if (EVP_PKEY_encrypt_init(ctx) <= 0)
+    {
+        EVP_PKEY_CTX_free(ctx);
+        EVP_PKEY_free(pkey);
+        print_openssl_error();
+        return "";
+    }
+
+    if (EVP_PKEY_CTX_set_rsa_padding(ctx, RSA_PKCS1_PADDING) <= 0)
+    {
+        EVP_PKEY_CTX_free(ctx);
+        EVP_PKEY_free(pkey);
+        print_openssl_error();
+        return "";
+    }
+
+    size_t outlen = 0;
+    if (EVP_PKEY_encrypt(ctx, nullptr, &outlen, reinterpret_cast<const unsigned char*>(data.data()), data.size()) <= 0)
+    {
+        EVP_PKEY_CTX_free(ctx);
+        EVP_PKEY_free(pkey);
+        print_openssl_error();
+        return "";
+    }
+
+    if (EVP_PKEY_encrypt(ctx, encrypted_data.data(), &outlen, reinterpret_cast<const unsigned char*>(data.data()), data.size()) <= 0)
+    {
+        EVP_PKEY_CTX_free(ctx);
+        EVP_PKEY_free(pkey);
+        print_openssl_error();
+        return "";
+    }
+
+    encrypted_data.resize(outlen);
+    EVP_PKEY_CTX_free(ctx);
+    EVP_PKEY_free(pkey);
+
     return base64_encode(encrypted_data.data(), encrypted_data.size());
 }
 
@@ -213,78 +318,63 @@ std::string RSAUtils::rsa_decrypt(RSA* rsa, const std::string& encrypted_data)
         return "";
     }
 
-    int rsa_size = RSA_size(rsa);
-    std::vector<unsigned char> decrypted_data(rsa_size);
-
-    int result = RSA_private_decrypt(der_encrypted_data.size(), der_encrypted_data.data(), decrypted_data.data(), rsa, RSA_PKCS1_PADDING);
-    if (result == -1)
+    EVP_PKEY* pkey = EVP_PKEY_new_RSA(rsa, nullptr);
+    if (!pkey)
     {
         print_openssl_error();
         return "";
     }
 
-    decrypted_data.resize(result);
+    int rsa_size = EVP_PKEY_size(pkey);
+    std::vector<unsigned char> decrypted_data(rsa_size);
+
+    EVP_PKEY_CTX* ctx = EVP_PKEY_CTX_new(pkey, nullptr);
+    if (!ctx)
+    {
+        EVP_PKEY_free(pkey);
+        print_openssl_error();
+        return "";
+    }
+
+    if (EVP_PKEY_decrypt_init(ctx) <= 0)
+    {
+        EVP_PKEY_CTX_free(ctx);
+        EVP_PKEY_free(pkey);
+        print_openssl_error();
+        return "";
+    }
+
+    if (EVP_PKEY_CTX_set_rsa_padding(ctx, RSA_PKCS1_PADDING) <= 0)
+    {
+        EVP_PKEY_CTX_free(ctx);
+        EVP_PKEY_free(pkey);
+        print_openssl_error();
+        return "";
+    }
+
+    size_t outlen = 0;
+    if (EVP_PKEY_decrypt(ctx, nullptr, &outlen, der_encrypted_data.data(), der_encrypted_data.size()) <= 0)
+    {
+        EVP_PKEY_CTX_free(ctx);
+        EVP_PKEY_free(pkey);
+        print_openssl_error();
+        return "";
+    }
+
+    if (EVP_PKEY_decrypt(ctx, decrypted_data.data(), &outlen, der_encrypted_data.data(), der_encrypted_data.size()) <= 0)
+    {
+        EVP_PKEY_CTX_free(ctx);
+        EVP_PKEY_free(pkey);
+        print_openssl_error();
+        return "";
+    }
+
+    decrypted_data.resize(outlen);
+    EVP_PKEY_CTX_free(ctx);
+    EVP_PKEY_free(pkey);
+
     return std::string(decrypted_data.begin(), decrypted_data.end());
 }
-
-/*
-int main()
-{
-    // 生成密钥对
-    try
-    {
-        auto [base64_private_key, base64_public_key] = generate_der_base64_key_pair();
-        std::cout << "Base64 Encoded Private Key (DER format):\n" << base64_private_key << std::endl;
-        std::cout << "Base64 Encoded Public Key (DER format):\n" << base64_public_key << std::endl;
-
-        // 加载Base64编码的密钥
-        RSA* rsa_private = load_base64_der_private_key(base64_private_key);
-        RSA* rsa_public = load_base64_der_public_key(base64_public_key);
-
-        if (!rsa_private || !rsa_public)
-        {
-            std::cerr << "Failed to load keys." << std::endl;
-            return 1;
-        }
-
-        // 测试加密和解密
-        std::vector<unsigned char> data = {'H', 'e', 'l', 'l', 'o', ' ', 'W', 'o', 'r', 'l', 'd'};
-        std::vector<unsigned char> encrypted_data = rsa_encrypt(rsa_public, data);
-        std::vector<unsigned char> decrypted_data = rsa_decrypt(rsa_private, encrypted_data);
-
-        std::cout << "Original Data: ";
-        for (auto ch : data)
-        {
-            std::cout << ch;
-        }
-        std::cout << std::endl;
-
-        std::cout << "Encrypted Data (hex): ";
-        for (auto ch : encrypted_data)
-        {
-            std::cout << std::hex << (int)ch << " ";
-        }
-        std::cout << std::endl;
-
-        std::cout << "Decrypted Data: ";
-        for (auto ch : decrypted_data)
-        {
-            std::cout << ch;
-        }
-        std::cout << std::endl;
-
-        RSA_free(rsa_private);
-        RSA_free(rsa_public);
-    }
-    catch (const std::exception& e)
-    {
-        std::cerr << "Error: " << e.what() << std::endl;
-        return 1;
-    }
-
-    return 0;
-}
-*/
 
 std::string RSAUtils::read_key_from_file(bool is_pubkey) {
     std::ifstream key_file;
