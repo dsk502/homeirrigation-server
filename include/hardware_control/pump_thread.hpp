@@ -29,7 +29,7 @@ public:
     ~PumpThread();
 
     int run_pump(double water_amount, std::chrono::system_clock::time_point now);
-    int pump_thread_main(double water_amount, std::string scheduled_freq, std::string scheduled_time);
+    int pump_thread_main(server_info* server_information);
 
 private:
     WateringRecordHelper* watering_record_helper_ptr;
