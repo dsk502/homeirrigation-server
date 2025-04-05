@@ -3,6 +3,7 @@
 
 #include <iostream>
 #include <fstream>
+#include <vector>
 #include <openssl/evp.h>
 #include <openssl/rand.h>
 
