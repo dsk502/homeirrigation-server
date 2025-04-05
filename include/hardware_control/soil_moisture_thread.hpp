@@ -6,6 +6,7 @@
 #include <thread>
 #include <chrono>
 #include <ctime>
+#include <cstring>
 
 class SoilMoistureThread {
 public:

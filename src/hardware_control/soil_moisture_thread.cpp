@@ -54,7 +54,7 @@ int SoilMoistureThread::soil_moisture_thread_main() {
 
         while(true) {
             auto now = std::chrono::system_clock::now();
-            if(next_noon - now <= 0) {
+            if(next_noon < now) {
                 double soil_humidity_percentage = adc_hardware_ptr->read_soil_humidity();
                 char buffer[80];
                 strftime(buffer, sizeof(buffer), "%Y%m%d", &start_tm);    //Format to YYYYMMDD
