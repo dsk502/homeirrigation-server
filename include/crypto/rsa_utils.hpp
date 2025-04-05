@@ -20,11 +20,11 @@ class RSAUtils {
 public:
     static bool is_keypair_exist();
     static int generate_der_base64_key_pair(int bits = 2048);
-    static RSA* load_base64_der_client_pubkey(std::string key_str);
-    static RSA* load_base64_der_server_pubkey();
-    static RSA* load_base64_der_server_prikey();
-    static std::string rsa_encrypt(RSA* rsa, const std::string& data);
-    static std::string rsa_decrypt(RSA* rsa, const std::string& encrypted_data);
+    static EVP_PKEY* load_base64_der_client_pubkey(std::string key_str);
+    static EVP_PKEY* load_base64_der_server_pubkey();
+    static EVP_PKEY* load_base64_der_server_prikey();
+    static std::string rsa_encrypt(EVP_PKEY* pkey, const std::string& data);
+    static std::string rsa_decrypt(EVP_PKEY* pkey, const std::string& encrypted_data);
     static std::string read_key_from_file(bool is_pubkey);
 
 private:
