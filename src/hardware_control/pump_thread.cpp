@@ -1,5 +1,4 @@
 #include "hardware_control/pump_thread.hpp"
-#include "pump_thread.hpp"
 
 PumpThread::PumpThread(WateringRecordHelper* watering_record_helper, ADCHardware* adc_hardware) {
     watering_record_helper_ptr = watering_record_helper;
