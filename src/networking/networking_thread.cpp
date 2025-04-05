@@ -121,7 +121,9 @@ NetworkingThread::NetworkingThread(ServerInfoDatabaseHelper* server_info_db_help
 }
 
 void NetworkingThread::create_thread(bool* is_added, std::string server_id, server_info* server_info, PumpThread*& pump_thread_obj, SoilMoistureThread*& soil_moisture_thread_obj) {
-    th = new std::thread(this->networking_thread_main, bool* is_added, std::string server_id, server_info* server_info, PumpThread*& pump_thread_obj, SoilMoistureThread*& soil_moisture_thread_obj);
+    th = new std::thread([this, is_added, server_id, server_info* server_info, pump_thread_obj, soil_moisture_thread_obj]() {
+        this->networking_thread_main(is_added, server_id, server_info* server_info, pump_thread_obj, soil_moisture_thread_obj);
+    });
 }
 
 NetworkingThread::~NetworkingThread()

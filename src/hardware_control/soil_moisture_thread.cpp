@@ -8,7 +8,9 @@ SoilMoistureThread::SoilMoistureThread(ADCHardware* adc_hardware, WateringRecord
 }
 
 void SoilMoistureThread::create_thread() {
-    th = new std::thread(this -> soil_moisture_thread_main);
+    th = new std::thread([this]() {
+        this->soil_moisture_thread_main();
+    });
 }
 
 SoilMoistureThread::~SoilMoistureThread() {

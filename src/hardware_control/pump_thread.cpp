@@ -8,7 +8,9 @@ PumpThread::PumpThread(WateringRecordHelper* watering_record_helper, ADCHardware
 
 void PumpThread::create_thread(server_info* server_information)
 {
-    th = new std::thread(pump_thread_main, server_information);
+    th = new std::thread([this, server_information]() {
+        this->pump_thread_main(server_information);
+    });
 }
 PumpThread::~PumpThread()
 {
