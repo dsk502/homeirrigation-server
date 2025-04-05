@@ -1,9 +1,9 @@
 #include "hardware_control/pump_thread.hpp"
 
-PumpThread::PumpThread(WateringRecordHelper* watering_record_helper, ADCHardware* adc_hardware, double water_amount, std::string scheduled_freq, std::string scheduled_time) {
+PumpThread::PumpThread(WateringRecordHelper* watering_record_helper, ADCHardware* adc_hardware, server_info* server_information) {
     watering_record_helper_ptr = watering_record_helper;
     adc_hardware_ptr = adc_hardware;
-    th = new std::thread(this->pump_thread_main, water_amount, scheduled_freq, scheduled_time);
+    th = new std::thread(this->pump_thread_main, server_information);
 }
 
 PumpThread::~PumpThread() {
@@ -14,7 +14,7 @@ PumpThread::~PumpThread() {
     th = nullptr;
 }
 
-int PumpThread::pump_thread_main(double water_amount, std::string scheduled_freq, std::string scheduled_time) {
+int PumpThread::pump_thread_main(server_info* server_information) {
     //Get the current date and time
     time_point start_time_point = std::chrono::system_clock::now();
     std::time_t start_c = std::chrono::system_clock::to_time_t(start_time_point);
@@ -29,8 +29,8 @@ int PumpThread::pump_thread_main(double water_amount, std::string scheduled_freq
     int start_min = ltm_start->tm_min;   //minute
     
     //Get the scheduled hour and minute in integer
-    int scheduled_hour = std::stoi(scheduled_time.substr(0, 2));
-    int scheduled_min = std::stoi(scheduled_time.substr(2, 2));
+    int scheduled_hour = std::stoi(server_information->scheduled_time.substr(0, 2));
+    int scheduled_min = std::stoi(server_information->scheduled_time.substr(2, 2));
 
     //Determine whether the first time of irrigation is in the next day
     bool is_next_day;
@@ -59,11 +59,11 @@ int PumpThread::pump_thread_main(double water_amount, std::string scheduled_freq
     
     //Set the normal duration
     std::chrono::hours normal_duration;
-    if(scheduled_freq == FREQ_EVERY_DAY) {
+    if(server_information->scheduled_freq == FREQ_EVERY_DAY) {
         normal_duration = std::chrono::hours(HOURS_ONE_DAY);
-    } else if(scheduled_freq == FREQ_EVERY_TWO_DAYS) {
+    } else if(server_information->scheduled_freq == FREQ_EVERY_TWO_DAYS) {
         normal_duration = std::chrono::hours(HOURS_TWO_DAYS);
-    } else if(scheduled_freq == FREQ_EVERY_THREE_DAYS) {
+    } else if(server_information->scheduled_freq == FREQ_EVERY_THREE_DAYS) {
         normal_duration = std::chrono::hours(HOURS_THREE_DAYS);
     } else {
         normal_duration = std::chrono::hours(HOURS_ONE_WEEK);
@@ -74,11 +74,11 @@ int PumpThread::pump_thread_main(double water_amount, std::string scheduled_freq
     while(true) {
         auto now = std::chrono::system_clock::now();
         if(now - start_time_point >= first_duration) { //If the duration has passed
-            run_pump(water_amount, now);
+            run_pump(std::stod(server_information->water_amount), now);
             break;
         }
         if(water_immediately) {
-            run_pump(water_amount, now);
+            run_pump(std::stod(server_information->water_amount), now);
             water_immediately = false;
         }
         if(stop_thread) {
@@ -93,11 +93,11 @@ int PumpThread::pump_thread_main(double water_amount, std::string scheduled_freq
         while(true) {
             auto now = std::chrono::system_clock::now();
             if(now - start_time_point >= normal_duration) {
-                run_pump(water_amount, now);
+                run_pump(std::stod(server_information->water_amount), now);
                 break;
             }
             if(water_immediately) {
-                run_pump(water_amount, now);
+                run_pump(std::stod(server_information->water_amount), now);
                 water_immediately = false;
             }
             if(stop_thread) {

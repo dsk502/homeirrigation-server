@@ -62,9 +62,9 @@ int HomeIrrigationServer::server_init() {
     //5. Read server_info database to determine whether this device is added by the client
     int num_of_records = m_server_info_database_helper->record_num();
     if(num_of_records == 1) {
-        m_is_added == true;
+        m_is_added = true;
     } else if(num_of_records == 0) {
-        m_is_added == false;
+        m_is_added = false;
     } else {
         //Server Error
         std::cout << "Server Error" << std::endl;
@@ -88,7 +88,7 @@ int HomeIrrigationServer::server_init() {
 
         //Start the soil moisture thread
         m_soil_moisture_thread_obj = new SoilMoistureThread(m_adc_hardware, m_watering_record_helper);
-        m_soil_moisture_thread_obj->th = new std::thread(m_soil_moisture_thread_obj->soil_moisture_thread_main);
+        //m_soil_moisture_thread_obj->th = new std::thread(m_soil_moisture_thread_obj->soil_moisture_thread_main);
         //m_soil_moisture_thread = new std::thread(m_soil_moisture_thread_obj->soil_moisture_thread_main);
         //m_soil_moisture_thread.detach();
 
@@ -96,7 +96,7 @@ int HomeIrrigationServer::server_init() {
         //Do nothing
     }
     m_net_thread_obj = new NetworkingThread();
-    m_net_thread = new std::thread(m_net_thread_obj->networking_thread_main);
+    //m_net_thread = new std::thread(m_net_thread_obj->networking_thread_main);
     //m_net_thread.detach();
 
     std::string input;

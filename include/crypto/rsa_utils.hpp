@@ -21,7 +21,7 @@ public:
     static RSA* load_base64_der_server_pubkey();
     static RSA* load_base64_der_server_prikey();
     static std::string rsa_encrypt(RSA* rsa, const std::string& data);
-    static std::string rsa_decrypt(RSA* rsa, const std::string& encrypted_data)
+    static std::string rsa_decrypt(RSA* rsa, const std::string& encrypted_data);
     static std::string read_key_from_file(bool is_pubkey);
 
 private:

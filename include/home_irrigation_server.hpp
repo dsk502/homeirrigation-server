@@ -16,6 +16,7 @@
 #include <thread>
 #include <sqlite3.h>
 #include <chrono>
+#include <algorithm>
 
 //The resources used in the server program
 
@@ -55,7 +56,7 @@ public:
     int server_init();
 
 private:
-    std::string HomeIrrigationServer::get_raspberry_pi_id();
+    std::string get_raspberry_pi_id();
 };
 
 #endif
