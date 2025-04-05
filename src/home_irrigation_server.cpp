@@ -98,4 +98,12 @@ int HomeIrrigationServer::server_init() {
     m_net_thread_obj = new NetworkingThread();
     m_net_thread = new std::thread(m_net_thread_obj->networking_thread_main);
     //m_net_thread.detach();
+
+    std::string input;
+    while(true) {
+        std::getline(std::cin, input);
+        if(input == "exit") {
+            break;
+        }
+    }
 }

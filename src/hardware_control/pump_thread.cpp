@@ -116,7 +116,10 @@ int PumpThread::run_pump(double water_amount, std::chrono::system_clock::time_po
     gpioSetMode(PUMP_PIN, PI_OUTPUT);
 
     //1. Determine whether water tank has enough water
-
+    double water_level = adc_hardware_ptr->read_water_level();
+    if(water_level < 20.0) {
+        return 1;
+    }
 
     //2. Start the pump
     gpioWrite(PUMP_PIN, PI_ON);  //Set the pin to high voltage 
