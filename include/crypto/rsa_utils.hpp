@@ -7,6 +7,7 @@
 #include <openssl/err.h>
 #include <openssl/evp.h>
 #include <openssl/bio.h>
+#include <openssl/buffer.h>
 #include <vector>
 #include <string>
 
