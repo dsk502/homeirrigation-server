@@ -1,8 +1,6 @@
 
 #include "crypto/rsa_utils.hpp"
 
-
-
 // 打印OpenSSL错误信息
 void print_openssl_error()
 {
@@ -149,9 +147,8 @@ int RSAUtils::generate_der_base64_key_pair(int bits)
 }
 
 // Load base64-encoded server public key from file
-RSA* RSAUtils::load_base64_der_server_pubkey()
+EVP_PKEY* RSAUtils::load_base64_der_server_pubkey()
 {
-    // Read the base64 string from file
     std::ifstream public_key_file(SERVER_PUBKEY_FILE);
     std::string base64_pubkey;
     if (std::getline(public_key_file, base64_pubkey)) // 读取第一行
@@ -165,7 +162,6 @@ RSA* RSAUtils::load_base64_der_server_pubkey()
         return nullptr;
     }
 
-    // Convert base64 string into RSA format
     std::vector<unsigned char> der_pubkey = base64_decode(base64_pubkey);
     if (der_pubkey.empty())
     {
@@ -181,15 +177,12 @@ RSA* RSAUtils::load_base64_der_server_pubkey()
         return nullptr;
     }
 
-    RSA* rsa = EVP_PKEY_get1_RSA(pkey);
-    EVP_PKEY_free(pkey);
-    return rsa;
+    return pkey;
 }
 
 // Load base64-encoded server private key from file
-RSA* RSAUtils::load_base64_der_server_prikey()
+EVP_PKEY* RSAUtils::load_base64_der_server_prikey()
 {
-    // Read the base64 string from file
     std::ifstream private_key_file(SERVER_PRIKEY_FILE);
     std::string base64_privatekey;
     if (std::getline(private_key_file, base64_privatekey)) // 读取第一行
@@ -203,7 +196,6 @@ RSA* RSAUtils::load_base64_der_server_prikey()
         return nullptr;
     }
 
-    // Convert base64 string into RSA format
     std::vector<unsigned char> der_privatekey = base64_decode(base64_privatekey);
     if (der_privatekey.empty())
     {
@@ -219,13 +211,11 @@ RSA* RSAUtils::load_base64_der_server_prikey()
         return nullptr;
     }
 
-    RSA* rsa = EVP_PKEY_get1_RSA(pkey);
-    EVP_PKEY_free(pkey);
-    return rsa;
+    return pkey;
 }
 
 // Load client public key from string
-RSA* RSAUtils::load_base64_der_client_pubkey(std::string key_str)
+EVP_PKEY* RSAUtils::load_base64_der_client_pubkey(std::string key_str)
 {
     std::vector<unsigned char> der_pubkey = base64_decode(key_str);
     if (der_pubkey.empty())
@@ -242,15 +232,12 @@ RSA* RSAUtils::load_base64_der_client_pubkey(std::string key_str)
         return nullptr;
     }
 
-    RSA* rsa = EVP_PKEY_get1_RSA(pkey);
-    EVP_PKEY_free(pkey);
-    return rsa;
+    return pkey;
 }
 
 // RSA加密
-std::string RSAUtils::rsa_encrypt(RSA* rsa, const std::string& data)
+std::string RSAUtils::rsa_encrypt(EVP_PKEY* pkey, const std::string& data)
 {
-    EVP_PKEY* pkey = EVP_PKEY_new_RSA(rsa, nullptr);
     if (!pkey)
     {
         print_openssl_error();
@@ -263,7 +250,6 @@ std::string RSAUtils::rsa_encrypt(RSA* rsa, const std::string& data)
     EVP_PKEY_CTX* ctx = EVP_PKEY_CTX_new(pkey, nullptr);
     if (!ctx)
     {
-        EVP_PKEY_free(pkey);
         print_openssl_error();
         return "";
     }
@@ -271,7 +257,6 @@ std::string RSAUtils::rsa_encrypt(RSA* rsa, const std::string& data)
     if (EVP_PKEY_encrypt_init(ctx) <= 0)
     {
         EVP_PKEY_CTX_free(ctx);
-        EVP_PKEY_free(pkey);
         print_openssl_error();
         return "";
     }
@@ -279,7 +264,6 @@ std::string RSAUtils::rsa_encrypt(RSA* rsa, const std::string& data)
     if (EVP_PKEY_CTX_set_rsa_padding(ctx, RSA_PKCS1_PADDING) <= 0)
     {
         EVP_PKEY_CTX_free(ctx);
-        EVP_PKEY_free(pkey);
         print_openssl_error();
         return "";
     }
@@ -288,7 +272,6 @@ std::string RSAUtils::rsa_encrypt(RSA* rsa, const std::string& data)
     if (EVP_PKEY_encrypt(ctx, nullptr, &outlen, reinterpret_cast<const unsigned char*>(data.data()), data.size()) <= 0)
     {
         EVP_PKEY_CTX_free(ctx);
-        EVP_PKEY_free(pkey);
         print_openssl_error();
         return "";
     }
@@ -296,32 +279,29 @@ std::string RSAUtils::rsa_encrypt(RSA* rsa, const std::string& data)
     if (EVP_PKEY_encrypt(ctx, encrypted_data.data(), &outlen, reinterpret_cast<const unsigned char*>(data.data()), data.size()) <= 0)
     {
         EVP_PKEY_CTX_free(ctx);
-        EVP_PKEY_free(pkey);
         print_openssl_error();
         return "";
     }
 
     encrypted_data.resize(outlen);
     EVP_PKEY_CTX_free(ctx);
-    EVP_PKEY_free(pkey);
 
     return base64_encode(encrypted_data.data(), encrypted_data.size());
 }
 
 // RSA解密
-std::string RSAUtils::rsa_decrypt(RSA* rsa, const std::string& encrypted_data)
+std::string RSAUtils::rsa_decrypt(EVP_PKEY* pkey, const std::string& encrypted_data)
 {
+    if (!pkey)
+    {
+        print_openssl_error();
+        return "";
+    }
+
     std::vector<unsigned char> der_encrypted_data = base64_decode(encrypted_data);
     if (der_encrypted_data.empty())
     {
         std::cerr << "Failed to decode Base64 encrypted data." << std::endl;
-        return "";
-    }
-
-    EVP_PKEY* pkey = EVP_PKEY_new_RSA(rsa, nullptr);
-    if (!pkey)
-    {
-        print_openssl_error();
         return "";
     }
 
@@ -331,7 +311,6 @@ std::string RSAUtils::rsa_decrypt(RSA* rsa, const std::string& encrypted_data)
     EVP_PKEY_CTX* ctx = EVP_PKEY_CTX_new(pkey, nullptr);
     if (!ctx)
     {
-        EVP_PKEY_free(pkey);
         print_openssl_error();
         return "";
     }
@@ -339,7 +318,6 @@ std::string RSAUtils::rsa_decrypt(RSA* rsa, const std::string& encrypted_data)
     if (EVP_PKEY_decrypt_init(ctx) <= 0)
     {
         EVP_PKEY_CTX_free(ctx);
-        EVP_PKEY_free(pkey);
         print_openssl_error();
         return "";
     }
@@ -347,7 +325,6 @@ std::string RSAUtils::rsa_decrypt(RSA* rsa, const std::string& encrypted_data)
     if (EVP_PKEY_CTX_set_rsa_padding(ctx, RSA_PKCS1_PADDING) <= 0)
     {
         EVP_PKEY_CTX_free(ctx);
-        EVP_PKEY_free(pkey);
         print_openssl_error();
         return "";
     }
@@ -356,7 +333,6 @@ std::string RSAUtils::rsa_decrypt(RSA* rsa, const std::string& encrypted_data)
     if (EVP_PKEY_decrypt(ctx, nullptr, &outlen, der_encrypted_data.data(), der_encrypted_data.size()) <= 0)
     {
         EVP_PKEY_CTX_free(ctx);
-        EVP_PKEY_free(pkey);
         print_openssl_error();
         return "";
     }
@@ -364,14 +340,12 @@ std::string RSAUtils::rsa_decrypt(RSA* rsa, const std::string& encrypted_data)
     if (EVP_PKEY_decrypt(ctx, decrypted_data.data(), &outlen, der_encrypted_data.data(), der_encrypted_data.size()) <= 0)
     {
         EVP_PKEY_CTX_free(ctx);
-        EVP_PKEY_free(pkey);
         print_openssl_error();
         return "";
     }
 
     decrypted_data.resize(outlen);
     EVP_PKEY_CTX_free(ctx);
-    EVP_PKEY_free(pkey);
 
     return std::string(decrypted_data.begin(), decrypted_data.end());
 }
