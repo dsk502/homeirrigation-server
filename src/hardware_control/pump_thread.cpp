@@ -23,7 +23,7 @@ PumpThread::~PumpThread()
 
 int PumpThread::pump_thread_main(server_info* server_information) {
     //Get the current date and time
-    time_point start_time_point = std::chrono::system_clock::now();
+    auto start_time_point = std::chrono::system_clock::now();
     std::time_t start_c = std::chrono::system_clock::to_time_t(start_time_point);
     std::tm* ltm_start = std::localtime(&start_c);  //local time
 
