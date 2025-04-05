@@ -5,6 +5,7 @@
 #include <chrono>
 #include <thread>
 #include "database/watering_record_helper.hpp"
+#include "database/server_info_database_helper.hpp"
 #include "adc_hardware.hpp"
 
 #define PUMP_PIN 18
