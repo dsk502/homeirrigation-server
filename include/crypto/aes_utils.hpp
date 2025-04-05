@@ -1,3 +1,6 @@
+#ifndef AESUTILS_HPP
+#define AESUTILS_HPP
+
 #include <iostream>
 #include <fstream>
 #include <openssl/evp.h>
@@ -13,3 +16,5 @@ public:
     static std::string base64_encode(const unsigned char* data, size_t length);
     static void encrypt_file(std::string server_id);
 };
+
+#endif

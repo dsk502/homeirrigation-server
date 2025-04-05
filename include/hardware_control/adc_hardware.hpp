@@ -1,3 +1,6 @@
+#ifndef ADCHARDWARE_HPP
+#define ADCHARDWARE_HPP
+
 #include <iostream>
 #include <pigpio.h>
 #include <fcntl.h>
@@ -32,3 +35,5 @@ private:
     int read_pcf8591_channel(int channel);
     
 };
+
+#endif

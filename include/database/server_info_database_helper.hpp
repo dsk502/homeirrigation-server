@@ -1,3 +1,6 @@
+#ifndef SERVERINFODATABASEHELPER_HPP
+#define SERVERINFODATABASEHELPER_HPP
+
 #include <string>
 #include <vector>
 #include "sqlite_database.hpp"
@@ -30,3 +33,4 @@ public:
     void clear_server_info();
 };
 
+#endif

@@ -1,3 +1,6 @@
+#ifndef SOILMOISTURETHREAD_HPP
+#define SOILMOISTURETHREAD_HPP
+
 #include "adc_hardware.hpp"
 #include "database/watering_record_helper.hpp"
 #include <thread>
@@ -17,3 +20,5 @@ private:
     ADCHardware* adc_hardware_ptr;
     WateringRecordHelper* watering_record_helper_ptr;
 };
+
+#endif

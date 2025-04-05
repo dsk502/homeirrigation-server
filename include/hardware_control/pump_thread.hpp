@@ -1,3 +1,6 @@
+#ifndef PUMPTHREAD_HPP
+#define PUMPTHREAD_HPP
+
 #include <pigpio.h>
 #include <chrono>
 #include <thread>
@@ -32,3 +35,5 @@ private:
     ADCHardware* adc_hardware_ptr;
     //std::mutex mtx_;
 };
+
+#endif

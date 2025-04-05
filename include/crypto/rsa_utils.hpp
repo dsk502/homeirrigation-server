@@ -1,3 +1,6 @@
+#ifndef RSAUTILS_HPP
+#define RSAUTILS_HPP
+
 #include <iostream>
 #include <fstream>
 #include <openssl/rsa.h>
@@ -25,3 +28,5 @@ private:
     static std::vector<unsigned char> base64_decode(const std::string& base64_data);
     static std::string base64_encode(const unsigned char* data, size_t length);
 };
+
+#endif

@@ -1,3 +1,6 @@
+#ifndef NETWORKINGTHREAD_HPP
+#define NETWORKINGTHREAD_HPP
+
 #include "hardware_control/soil_moisture_thread.hpp"
 #include "database/server_info_database_helper.hpp"
 #include "crypto/rsa_utils.hpp"
@@ -36,3 +39,5 @@ private:
     std::vector<std::string> extract_params(std::string message_pt);
     int sendAll(int sock, const char* buf, int len);
 };
+
+#endif

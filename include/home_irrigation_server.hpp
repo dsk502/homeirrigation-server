@@ -1,3 +1,6 @@
+#ifndef HOMEIRRIGATIONSERVER_HPP
+#define HOMEIRRIGATIONSERVER_HPP
+
 #include "hardware_control/pump_thread.hpp"
 #include "hardware_control/adc_hardware.hpp"
 #include "hardware_control/soil_moisture_thread.hpp"
@@ -54,3 +57,5 @@ public:
 private:
     std::string HomeIrrigationServer::get_raspberry_pi_id();
 };
+
+#endif

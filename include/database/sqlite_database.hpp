@@ -1,14 +1,5 @@
-/*
-class SQLiteDatabaseHelper {
-private:
-    std::string m_db_path;
-    sqlite3* m_db = nullptr;
-
-public:
-    SQLiteDatabaseHelper(std::string db_ath);
-    int open_db();
-    int run_SQL(std::string sql_statement);
-};*/
+#ifndef SQLITEDATABASE_HPP
+#define SQLITEDATABASE_HPP
 
 #include <iostream>
 #include <sqlite3.h>
@@ -32,3 +23,5 @@ public:
     // 查询数据
     std::vector<std::vector<std::string>> query(const std::string& sql);
 };
+
+#endif

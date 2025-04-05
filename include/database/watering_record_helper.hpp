@@ -1,3 +1,6 @@
+#ifndef WATERINGRECORDHELPER_HPP
+#define WATERINGRECORDHELPER_HPP
+
 #include <iostream>
 #include <string>
 #include <fstream>
@@ -46,3 +49,5 @@ public:
     //std::vector<std::vector<std::string>> read_records(int start_date);
 
 };
+
+#endif
