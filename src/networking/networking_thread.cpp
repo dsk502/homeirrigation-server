@@ -1,14 +1,6 @@
-#include <iostream>
-#include <sys/socket.h>
-#include <arpa/inet.h>
-#include <unistd.h>
-#include <sstream>
-#include <string>
+
 #include "networking/networking_thread.hpp"
-#include "hardware_control/soil_moisture_thread.hpp"
-#include "database/server_info_database_helper.hpp"
-#include "crypto/rsa_utils.hpp"
-#include "crypto/aes_utils.hpp"
+
 
 #define ENCRYPTED_TAG (char)0x02
 #define UNENCRYPTED_TAG (char)0x01

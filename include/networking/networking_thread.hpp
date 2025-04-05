@@ -1,4 +1,13 @@
-#include "database/sqlite_database.hpp"
+#include "hardware_control/soil_moisture_thread.hpp"
+#include "database/server_info_database_helper.hpp"
+#include "crypto/rsa_utils.hpp"
+#include "crypto/aes_utils.hpp"
+#include <iostream>
+#include <sys/socket.h>
+#include <arpa/inet.h>
+#include <unistd.h>
+#include <sstream>
+#include <string>
 #include "hardware_control/pump_thread.hpp"
 
 class NetworkingThread {
