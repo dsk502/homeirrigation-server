@@ -204,7 +204,8 @@ EVP_PKEY* RSAUtils::load_base64_der_server_prikey()
     }
 
     const unsigned char* der_ptr = der_privatekey.data();
-    EVP_PKEY* pkey = d2i_PrivateKey(EVP_PKEY_RSA, &der_ptr, der_privatekey.size());
+    EVP_PKEY* pkey = nullptr;
+    d2i_PrivateKey(EVP_PKEY_RSA, &pkey, &der_ptr, der_privatekey.size());
     if (!pkey)
     {
         print_openssl_error();
