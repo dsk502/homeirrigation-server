@@ -98,7 +98,7 @@ int HomeIrrigationServer::server_init() {
         //Do nothing
     }
     m_net_thread_obj = new NetworkingThread(m_server_info_database_helper, m_watering_record_helper, m_adc_hardware);
-    m_net_thread_obj->create_thread(&m_is_added, m_server_id, m_server_info, m_pump_thread_obj, m_soil_moisture_thread_obj)
+    m_net_thread_obj->create_thread(&m_is_added, m_server_id, m_server_info, m_pump_thread_obj, m_soil_moisture_thread_obj);
     //m_net_thread = new std::thread(m_net_thread_obj->networking_thread_main);
     //m_net_thread.detach();
 
