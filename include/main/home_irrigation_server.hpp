@@ -10,7 +10,6 @@
 #include "database/watering_record_helper.hpp"
 #include "crypto/rsa_utils.hpp"
 #include "networking/networking_thread.hpp"
-#include "thread_objects.hpp"
 #include <iostream>
 #include <string>
 #include <thread>

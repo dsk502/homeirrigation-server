@@ -13,7 +13,12 @@
 #include <string>
 #include "hardware_control/pump_thread.hpp"
 #include "hardware_control/adc_hardware.hpp"
-#include "main/thread_objects.hpp"
+
+typedef struct thread_objects {
+    PumpThread* pump_thread_obj;
+    SoilMoistureThread* soil_moisture_thread_obj;
+    NetworkingThread* net_thread_obj;
+} thread_objects;
 
 class NetworkingThread {
 public:
