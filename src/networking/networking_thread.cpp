@@ -273,10 +273,10 @@ int NetworkingThread::networking_thread_main(bool* is_added, std::string server_
                 // pump_thread->join();
                 // delete pump_thread;
                 // pump_thread = nullptr;
-                delete pump_thread_obj;
-                pump_thread_obj = nullptr;
+                delete hard_thread_objs->pump_thread_obj;
+                //hard_thread_objs->pump_thread_obj = nullptr;
 
-                pump_thread_obj = new PumpThread(watering_record_helper_ptr, adc_hardware_ptr, std::stod(new_water_amount), new_scheduled_freq, new_scheduled_time);
+                hard_thread_objs->pump_thread_obj = new PumpThread(watering_record_helper_ptr, adc_hardware_ptr, std::stod(new_water_amount), new_scheduled_freq, new_scheduled_time);
                 //pump_thread = new std::thread(pump_thread_obj->pump_thread_main, std::stod(water_amount), scheduled_freq, scheduled_time);
 
                 //Reply "finish_edit_server"
@@ -287,7 +287,7 @@ int NetworkingThread::networking_thread_main(bool* is_added, std::string server_
                 //End edit mode
             } else if(recv_command == "watering_now"){
 
-                pump_thread_obj->water_immediately = true;
+                hard_thread_objs->pump_thread_obj->water_immediately = true;
 
                 //Reply "watering_succeed"
                 std::string sending_message = "watering_succeed()";
