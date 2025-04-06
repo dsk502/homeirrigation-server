@@ -1,5 +1,7 @@
 #include "hardware_control/pump_thread.hpp"
 
+#include <pigpio.h>
+
 PumpThread::PumpThread(WateringRecordHelper* watering_record_helper, ADCHardware* adc_hardware) {
     watering_record_helper_ptr = watering_record_helper;
     adc_hardware_ptr = adc_hardware;

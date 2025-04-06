@@ -1,7 +1,6 @@
 #ifndef PUMPTHREAD_HPP
 #define PUMPTHREAD_HPP
 
-#include <pigpio.h>
 #include <chrono>
 #include <thread>
 #include "database/watering_record_helper.hpp"

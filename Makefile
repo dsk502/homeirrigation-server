@@ -10,7 +10,7 @@ BIN_DIR = bin
 #Set compiler and its options
 CC = g++
 CFLAGS = -std=c++11 -Wall -I$(INCLUDE_DIR)
-LFLAGS = -lpigpio -lssl -lcrypto
+LFLAGS = -lpigpio -lssl -lcrypto -lsqlite3
 
 #Get source code and set object and target files
 SRCS = $(shell find $(SRC_DIR) -name '*.cpp')

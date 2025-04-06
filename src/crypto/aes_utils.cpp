@@ -1,5 +1,9 @@
 #include "crypto/aes_utils.hpp"
 
+#include <openssl/evp.h>
+#include <openssl/rand.h>
+#include <openssl/buffer.h>
+
 #define KEY_LEN 32
 #define IV_LEN 16
 #define KEY_FILE "keys/aes.key"
