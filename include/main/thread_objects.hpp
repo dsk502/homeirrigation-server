@@ -1,6 +1,0 @@
-#ifndef THREADOBJECTS_HPP
-#define THREADOBJECTS_HPP
-
-
-
-#endif

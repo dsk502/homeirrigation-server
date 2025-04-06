@@ -16,14 +16,11 @@
 #include <sqlite3.h>
 #include <chrono>
 #include <algorithm>
+#include "hardware_thread_objects.hpp"
 
 //The resources used in the server program
 
-typedef struct thread_objects {
-    PumpThread* pump_thread_obj;
-    SoilMoistureThread* soil_moisture_thread_obj;
-    NetworkingThread* net_thread_obj;
-} thread_objects;
+
 
 class HomeIrrigationServer {
 public:
@@ -48,8 +45,9 @@ public:
     //Server info
     server_info* m_server_info;
 
-    //Thread class objects struct
-    thread_objects* m_thread_objs;
+    //Thread class objects
+    hardware_thread_objects* m_hard_thread_objs;
+    NetworkingThread* m_net_thread_obj;
 
     //Thread variables
     //std::thread* m_pump_thread;

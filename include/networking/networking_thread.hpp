@@ -13,19 +13,14 @@
 #include <string>
 #include "hardware_control/pump_thread.hpp"
 #include "hardware_control/adc_hardware.hpp"
-
-typedef struct thread_objects {
-    PumpThread* pump_thread_obj;
-    SoilMoistureThread* soil_moisture_thread_obj;
-    NetworkingThread* net_thread_obj;
-} thread_objects;
+#include "main/hardware_thread_objects.hpp"
 
 class NetworkingThread {
 public:
     std::thread* th;
     //bool stop_thread;
 
-    int networking_thread_main(bool* is_added, std::string server_id, server_info* server_info, thread_objects* thread_objs);
+    int networking_thread_main(bool* is_added, std::string server_id, server_info* server_info, hardware_thread_objects* hard_thread_objs);
     
     NetworkingThread(ServerInfoDatabaseHelper* server_info_db_helper, WateringRecordHelper* watering_record_helper, ADCHardware* adc_hardware);
     void create_thread(bool* is_added, std::string server_id, server_info* server_information, thread_objects* thread_objs);
