@@ -31,7 +31,7 @@ $(TARGET_BIN): $(OBJS)
 	@mkdir -p $(BIN_DIR)/keys
 	@mkdir -p $(BIN_DIR)/dbs
 	@mkdir -p $(BIN_DIR)/temp
-	$(CC) $(LFLAGS) $^ -o $@
+	$(CC) $^ $(LFLAGS) -o $@
 
 #Clean build folders
 clean:
