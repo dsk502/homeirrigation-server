@@ -18,6 +18,11 @@
 #include <chrono>
 #include <algorithm>
 
+typedef struct thread_objects {
+    PumpThread* pump_thread_obj;
+    SoilMoistureThread* soil_moisture_thread_obj;
+    NetworkingThread* net_thread_obj;
+} thread_objs;
 //The resources used in the server program
 
 class HomeIrrigationServer {
@@ -43,10 +48,8 @@ public:
     //Server info
     server_info* m_server_info;
 
-    //Thread class objects
-    PumpThread* m_pump_thread_obj;
-    SoilMoistureThread* m_soil_moisture_thread_obj;
-    NetworkingThread* m_net_thread_obj;
+    //Thread class objects struct
+    thread_objects* m_thread_objs;
 
     //Thread variables
     //std::thread* m_pump_thread;

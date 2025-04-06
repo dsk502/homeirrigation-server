@@ -118,9 +118,9 @@ NetworkingThread::NetworkingThread(ServerInfoDatabaseHelper* server_info_db_help
     this->adc_hardware_ptr = adc_hardware;
 }
 
-void NetworkingThread::create_thread(bool* is_added, std::string server_id, server_info* server_info, PumpThread*& pump_thread_obj, SoilMoistureThread*& soil_moisture_thread_obj) {
-    th = new std::thread([this, is_added, server_id, server_info, pump_thread_obj, soil_moisture_thread_obj]() {
-        this->networking_thread_main(is_added, server_id, server_info, pump_thread_obj, soil_moisture_thread_obj);
+void NetworkingThread::create_thread(bool* is_added, std::string server_id, server_info* server_info, thread_objects* thread_objs) {
+    th = new std::thread([this, is_added, server_id, server_info, thread_objs]() {
+        this->networking_thread_main(is_added, server_id, server_info, thread_objs);
     });
 }
 
@@ -134,7 +134,7 @@ NetworkingThread::~NetworkingThread()
     th = nullptr;
 }
 
-int NetworkingThread::networking_thread_main(bool* is_added, std::string server_id, server_info* server_information, PumpThread*& pump_thread_obj, SoilMoistureThread*& soil_moisture_thread_obj) {    //pump_thread is a reference to the pointer pointing to PumpThread. This can pass the pointer by its address (the pointer of pointer).
+int NetworkingThread::networking_thread_main(bool* is_added, std::string server_id, server_info* server_information, thread_objects* thread_objs) {    //pump_thread is a reference to the pointer pointing to PumpThread. This can pass the pointer by its address (the pointer of pointer).
     //Read server id
     //std::string server_id = ;
     //std::string server_prikey = RSAUtils::read_key_from_file(false);
@@ -213,22 +213,22 @@ int NetworkingThread::networking_thread_main(bool* is_added, std::string server_
                     //Exit the pump control thread
                     //pump_thread_obj->stop_thread = true;
                     //pump_thread->join();
-                    delete pump_thread_obj;
+                    delete thread_objs->pump_thread_obj;
                     //pump_thread = nullptr;
                     //delete pump_thread_obj;
                     //pump_thread_obj = nullptr;
-                    pump_thread_obj = new PumpThread(watering_record_helper_ptr, adc_hardware_ptr);
-                    pump_thread_obj->create_thread(server_information);
+                    thread_objs->pump_thread_obj = new PumpThread(watering_record_helper_ptr, adc_hardware_ptr);
+                    thread_objs->pump_thread_obj->create_thread(server_information);
 
                     //Exit the soil moisture thread
                     //soil_moisture_thread_obj->stop_thread = true;
                     //soil_moisture_thread->join();
-                    delete soil_moisture_thread_obj;
+                    delete thread_objs->soil_moisture_thread_obj;
                     //soil_moisture_thread = nullptr;
                     //delete soil_moisture_thread_obj;
                     //soil_moisture_thread_obj = nullptr;
-                    soil_moisture_thread_obj = new SoilMoistureThread(adc_hardware_ptr, watering_record_helper_ptr);
-                    soil_moisture_thread_obj->create_thread();
+                    thread_objs->soil_moisture_thread_obj = new SoilMoistureThread(adc_hardware_ptr, watering_record_helper_ptr);
+                    thread_objs->soil_moisture_thread_obj->create_thread();
 
                     //Clear watering info
                     watering_record_helper_ptr->clear_record();
@@ -478,11 +478,11 @@ int NetworkingThread::networking_thread_main(bool* is_added, std::string server_
                     *is_added = true;
 
                     //Start pump control thread and soil moisture thread
-                    pump_thread_obj = new PumpThread(watering_record_helper_ptr, adc_hardware_ptr);
-                    pump_thread_obj->create_thread(server_information);
+                    thread_objs->pump_thread_obj = new PumpThread(watering_record_helper_ptr, adc_hardware_ptr);
+                    thread_objs->pump_thread_obj->create_thread(server_information);
                     //pump_thread = new std::thread(pump_thread_obj->pump_thread_main, std::stod(water_amount), scheduled_freq, scheduled_time);
-                    soil_moisture_thread_obj = new SoilMoistureThread(adc_hardware_ptr, watering_record_helper_ptr);
-                    soil_moisture_thread_obj->create_thread();
+                    thread_objs->soil_moisture_thread_obj = new SoilMoistureThread(adc_hardware_ptr, watering_record_helper_ptr);
+                    thread_objs->soil_moisture_thread_obj->create_thread();
                     //soil_moisture_thread = new std::thread(soil_moisture_thread_obj->soil_moisture_thread_main);
 
                 } else {

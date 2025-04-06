@@ -59,7 +59,10 @@ int HomeIrrigationServer::server_init() {
     m_adc_hardware = new ADCHardware();
     m_adc_hardware->init_gpio();
 
-    //5. Read server_info database to determine whether this device is added by the client
+    //5. Init thread objects struct
+    m_thread_objs = new thread_objects();
+
+    //6. Read server_info database to determine whether this device is added by the client
     int num_of_records = m_server_info_database_helper->record_num();
     if(num_of_records == 1) {
         m_is_added = true;
@@ -81,15 +84,15 @@ int HomeIrrigationServer::server_init() {
         }
 
         //Start the pump thread
-        m_pump_thread_obj = new PumpThread(m_watering_record_helper, m_adc_hardware);
-        m_pump_thread_obj->create_thread(m_server_info);
+        m_thread_objs->pump_thread_obj = new PumpThread(m_watering_record_helper, m_adc_hardware);
+        m_thread_objs->pump_thread_obj->create_thread(m_server_info);
         //m_pump_thread_obj->th = new std::thread(m_pump_thread_obj->pump_thread_main, m_server_info->scheduled_freq, m_server_info->scheduled_time);
         //m_pump_thread = new std::thread(m_pump_thread_obj->pump_thread_main, m_server_info->scheduled_freq, m_server_info->scheduled_time);
         //m_pump_thread.detach();
 
         //Start the soil moisture thread
-        m_soil_moisture_thread_obj = new SoilMoistureThread(m_adc_hardware, m_watering_record_helper);
-        m_soil_moisture_thread_obj->create_thread();
+        m_thread_objs->soil_moisture_thread_obj = new SoilMoistureThread(m_adc_hardware, m_watering_record_helper);
+        m_thread_objs->soil_moisture_thread_obj->create_thread();
         //m_soil_moisture_thread_obj->th = new std::thread(m_soil_moisture_thread_obj->soil_moisture_thread_main);
         //m_soil_moisture_thread = new std::thread(m_soil_moisture_thread_obj->soil_moisture_thread_main);
         //m_soil_moisture_thread.detach();
@@ -97,8 +100,8 @@ int HomeIrrigationServer::server_init() {
     } else {    //If the device is not added
         //Do nothing
     }
-    m_net_thread_obj = new NetworkingThread(m_server_info_database_helper, m_watering_record_helper, m_adc_hardware);
-    m_net_thread_obj->create_thread(&m_is_added, m_server_id, m_server_info, m_pump_thread_obj, m_soil_moisture_thread_obj);
+    m_thread_objs->net_thread_obj = new NetworkingThread(m_server_info_database_helper, m_watering_record_helper, m_adc_hardware);
+    m_thread_objs->net_thread_obj->create_thread(&m_is_added, m_server_id, m_server_info, m_thread_objs);
     //m_net_thread = new std::thread(m_net_thread_obj->networking_thread_main);
     //m_net_thread.detach();
 
