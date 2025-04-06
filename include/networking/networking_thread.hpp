@@ -15,6 +15,8 @@
 #include "hardware_control/adc_hardware.hpp"
 #include "main/hardware_thread_objects.hpp"
 
+#define SERVER_ID_FILE_PATH "bin/keys/server_id.txt"
+
 class NetworkingThread {
 public:
     std::thread* th;

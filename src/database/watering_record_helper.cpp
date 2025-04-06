@@ -1,15 +1,5 @@
 #include "database/watering_record_helper.hpp"
 
-/*
-int WateringRecordHelper::create_record(std::string date_str) {
-
-}
-
-int WateringRecordHelper::del_record(std::string start_date_str, std::string end_date_str) {
-
-}
-*/
-
 WateringRecordHelper::WateringRecordHelper() {
     m_sqlite_database = new SQLiteDatabase();
     m_sqlite_database->open(WATERING_RECORD_DB_PATH);
@@ -23,6 +13,7 @@ WateringRecordHelper::~WateringRecordHelper() {
 int WateringRecordHelper::create_table_if_not_exist() {
     std::string create_table_sql = "CREATE TABLE IF NOT EXISTS watering_record {day INTEGER PRIMARY KEY, times_of_watering INTEGER, soil_moisture_percentage REAL};";
     m_sqlite_database->exec(create_table_sql);
+    return 0;
 }
 
 //Update a record in watering_record table

@@ -20,8 +20,6 @@
 
 //The resources used in the server program
 
-
-
 class HomeIrrigationServer {
 public:
     //Resources

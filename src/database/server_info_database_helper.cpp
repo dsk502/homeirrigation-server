@@ -18,6 +18,7 @@ int ServerInfoDatabaseHelper::create_table_if_not_exist() {
         "scheduled_freq INTEGER, scheduled_time TEXT"
         ");";
     m_sqlite_database->exec(create_server_info_sql);
+    return 0;
 }
 
 //Return the number of records

@@ -33,11 +33,11 @@ int HomeIrrigationServer::server_init() {
         std::cerr << "Failed to initialise pigpio library" << std::endl;
         return 1;
     }
-    return 0;
+    //return 0;
 
     //2. Check if server_id file exists
     //If yes, read the server id; If not, generate the file
-    std::ifstream server_id_file_read("server_id.txt");
+    std::ifstream server_id_file_read(SERVER_ID_FILE_PATH);
     if (server_id_file_read.is_open()) {
         std::cout << "Server id file exist" << std::endl;
         std::getline(server_id_file_read, m_server_id);
@@ -46,7 +46,7 @@ int HomeIrrigationServer::server_init() {
         std::cout << "Server id file does not exist" << std::endl;
         server_id_file_read.close();
         m_server_id = get_raspberry_pi_id();
-        std::ofstream server_id_file_write("server_id.txt");
+        std::ofstream server_id_file_write(SERVER_ID_FILE_PATH);
         server_id_file_write << m_server_id << std::endl;
         server_id_file_write.close();
     }
@@ -109,7 +109,8 @@ int HomeIrrigationServer::server_init() {
     while(true) {
         std::getline(std::cin, input);
         if(input == "exit") {
-            break;
+            return 0;
         }
     }
+    return 0;
 }

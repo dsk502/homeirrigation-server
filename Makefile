@@ -9,7 +9,7 @@ BIN_DIR = bin
 
 #Set compiler and its options
 CC = g++
-CFLAGS = -std=c++11 -Wall -I$(INCLUDE_DIR)
+CFLAGS = -std=c++11 -Wall -I$(INCLUDE_DIR) -g
 LFLAGS = -lpigpio -lssl -lcrypto -lsqlite3
 
 #Get source code and set object and target files
