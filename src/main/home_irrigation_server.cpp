@@ -1,4 +1,4 @@
-#include "home_irrigation_server.hpp"
+#include "main/home_irrigation_server.hpp"
 
 std::string HomeIrrigationServer::get_raspberry_pi_id() {
     std::ifstream cpuinfo("/proc/cpuinfo");
