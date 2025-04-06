@@ -60,7 +60,7 @@ int HomeIrrigationServer::server_init() {
     m_adc_hardware->init_gpio();
 
     //5. Init thread objects struct
-    m_thread_objs = new thread_objects();
+    m_thread_objs = new thread_objects;
 
     //6. Read server_info database to determine whether this device is added by the client
     int num_of_records = m_server_info_database_helper->record_num();

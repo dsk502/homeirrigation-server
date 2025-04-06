@@ -23,6 +23,7 @@ typedef struct thread_objects {
     SoilMoistureThread* soil_moisture_thread_obj;
     NetworkingThread* net_thread_obj;
 } thread_objects;
+
 //The resources used in the server program
 
 class HomeIrrigationServer {

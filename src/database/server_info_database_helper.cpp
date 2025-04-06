@@ -56,7 +56,7 @@ int ServerInfoDatabaseHelper::update_mode(std::string new_mode, std::string new_
 
 //Get the server info
 struct server_info* ServerInfoDatabaseHelper::get_server_info() {
-    server_info* info = new server_info();
+    server_info* info = new server_info;
     std::vector<std::vector<std::string>> records;
     std::string sql_stmt = "SELECT * FROM server_info";
     records = m_sqlite_database->query(sql_stmt);
