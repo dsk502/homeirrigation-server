@@ -49,7 +49,7 @@ char* NetworkingThread::pack_message(std::string message, bool is_encrypted, int
     char* packed_bytes = new char[packed_bytes_len];
     if(is_encrypted) {
         EVP_PKEY* client_pubkey_loaded = RSAUtils::load_base64_der_client_pubkey(client_pubkey);
-        std::string encrypted_message = RSAUtils::rsa_encrypt(message, client_pubkey_loaded);
+        std::string encrypted_message = RSAUtils::rsa_encrypt(client_pubkey_loaded, message);
         char_array_copy(encrypted_message.c_str(), 0, packed_bytes, 1, encrypted_message.length());
         packed_bytes[0] = ENCRYPTED_TAG;
     } else {
@@ -137,7 +137,7 @@ NetworkingThread::~NetworkingThread()
 int NetworkingThread::networking_thread_main(bool* is_added, std::string server_id, server_info* server_information, PumpThread*& pump_thread_obj, SoilMoistureThread*& soil_moisture_thread_obj) {    //pump_thread is a reference to the pointer pointing to PumpThread. This can pass the pointer by its address (the pointer of pointer).
     //Read server id
     //std::string server_id = ;
-    std::string server_prikey = RSAUtils::read_key_from_file(false);
+    //std::string server_prikey = RSAUtils::read_key_from_file(false);
 
     //int server_fd, client_socket;
     struct sockaddr_in address;
@@ -276,7 +276,7 @@ int NetworkingThread::networking_thread_main(bool* is_added, std::string server_
                 delete pump_thread_obj;
                 pump_thread_obj = nullptr;
 
-                pump_thread_obj = new PumpThread(watering_record_helper, adc_hardware_ptr, std::stod(new_water_amount), new_scheduled_freq, new_scheduled_time);
+                pump_thread_obj = new PumpThread(watering_record_helper_ptr, adc_hardware_ptr, std::stod(new_water_amount), new_scheduled_freq, new_scheduled_time);
                 //pump_thread = new std::thread(pump_thread_obj->pump_thread_main, std::stod(water_amount), scheduled_freq, scheduled_time);
 
                 //Reply "finish_edit_server"
@@ -431,7 +431,7 @@ int NetworkingThread::networking_thread_main(bool* is_added, std::string server_
                     if(receive_buffer[0] != (char)0x02) {
                         //Error: invalid message
                     }
-                    received_message = unpack_encrypted_message(receive_buffer, receive_len, server_prikey);
+                    received_message = unpack_encrypted_message(receive_buffer, receive_len);
                     recv_command = extract_command(received_message);
                     
                     if(recv_command != "reply_add_param") {
@@ -457,7 +457,7 @@ int NetworkingThread::networking_thread_main(bool* is_added, std::string server_
                     if(receive_buffer[0] != (char)0x02) {
                         //Error: invalid message
                     }
-                    received_message = unpack_encrypted_message(receive_buffer, receive_len, server_prikey);
+                    received_message = unpack_encrypted_message(receive_buffer, receive_len);
                     recv_command = extract_command(received_message);
                     
                     if(recv_command != "finish_add_client") {
