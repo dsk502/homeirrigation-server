@@ -19,6 +19,12 @@
 
 //The resources used in the server program
 
+typedef struct thread_objects {
+    PumpThread* pump_thread_obj;
+    SoilMoistureThread* soil_moisture_thread_obj;
+    NetworkingThread* net_thread_obj;
+} thread_objects;
+
 class HomeIrrigationServer {
 public:
     //Resources
