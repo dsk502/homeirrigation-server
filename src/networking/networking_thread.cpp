@@ -1,7 +1,5 @@
 
 #include "networking/networking_thread.hpp"
-#include "networking_thread.hpp"
-
 
 #define ENCRYPTED_TAG (char)0x02
 #define UNENCRYPTED_TAG (char)0x01
