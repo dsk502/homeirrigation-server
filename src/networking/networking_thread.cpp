@@ -276,7 +276,8 @@ int NetworkingThread::networking_thread_main(bool* is_added, std::string server_
                 delete hard_thread_objs->pump_thread_obj;
                 //hard_thread_objs->pump_thread_obj = nullptr;
 
-                hard_thread_objs->pump_thread_obj = new PumpThread(watering_record_helper_ptr, adc_hardware_ptr, std::stod(new_water_amount), new_scheduled_freq, new_scheduled_time);
+                hard_thread_objs->pump_thread_obj = new PumpThread(watering_record_helper_ptr, adc_hardware_ptr);
+                hard_thread_objs->pump_thread_obj->create_thread(server_information);
                 //pump_thread = new std::thread(pump_thread_obj->pump_thread_main, std::stod(water_amount), scheduled_freq, scheduled_time);
 
                 //Reply "finish_edit_server"
