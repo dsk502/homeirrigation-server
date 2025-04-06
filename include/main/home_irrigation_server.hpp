@@ -10,19 +10,13 @@
 #include "database/watering_record_helper.hpp"
 #include "crypto/rsa_utils.hpp"
 #include "networking/networking_thread.hpp"
-
+#include "thread_objects.hpp"
 #include <iostream>
 #include <string>
 #include <thread>
 #include <sqlite3.h>
 #include <chrono>
 #include <algorithm>
-
-typedef struct thread_objects {
-    PumpThread* pump_thread_obj;
-    SoilMoistureThread* soil_moisture_thread_obj;
-    NetworkingThread* net_thread_obj;
-} thread_objects;
 
 //The resources used in the server program
 
