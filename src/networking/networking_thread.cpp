@@ -118,9 +118,9 @@ NetworkingThread::NetworkingThread(ServerInfoDatabaseHelper* server_info_db_help
     this->adc_hardware_ptr = adc_hardware;
 }
 
-void NetworkingThread::create_thread(bool* is_added, std::string server_id, server_info* server_info, thread_objects* thread_objs) {
-    th = new std::thread([this, is_added, server_id, server_info, thread_objs]() {
-        this->networking_thread_main(is_added, server_id, server_info, thread_objs);
+void NetworkingThread::create_thread(bool* is_added, std::string server_id, server_info* server_info, hardware_thread_objects* hard_thread_objs) {
+    th = new std::thread([this, is_added, server_id, server_info, hard_thread_objs]() {
+        this->networking_thread_main(is_added, server_id, server_info, hard_thread_objs);
     });
 }
 

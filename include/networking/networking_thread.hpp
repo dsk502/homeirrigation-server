@@ -23,7 +23,7 @@ public:
     int networking_thread_main(bool* is_added, std::string server_id, server_info* server_info, hardware_thread_objects* hard_thread_objs);
     
     NetworkingThread(ServerInfoDatabaseHelper* server_info_db_helper, WateringRecordHelper* watering_record_helper, ADCHardware* adc_hardware);
-    void create_thread(bool* is_added, std::string server_id, server_info* server_information, thread_objects* thread_objs);
+    void create_thread(bool* is_added, std::string server_id, server_info* server_information, hardware_thread_objects* hard_thread_objs);
     ~NetworkingThread();
 
 private:
