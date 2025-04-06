@@ -13,7 +13,7 @@
 #include <string>
 #include "hardware_control/pump_thread.hpp"
 #include "hardware_control/adc_hardware.hpp"
-#include "home_irrigation_server.hpp"
+#include "../home_irrigation_server.hpp"
 
 class NetworkingThread {
 public:
