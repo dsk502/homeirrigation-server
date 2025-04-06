@@ -38,8 +38,8 @@ std::string NetworkingThread::unpack_unencrypted_message(char* receive_buffer, i
 
 std::string NetworkingThread::unpack_encrypted_message(char* receive_buffer, int receive_len) {
     std::string message_cipher = unpack_unencrypted_message(receive_buffer, receive_len);
-    RSA* server_prikey_loaded = RSAUtils::load_base64_der_server_prikey();
-    std::string message_pt = RSAUtils::rsa_decrypt(message_cipher, server_prikey_loaded);
+    EVP_PKEY* server_prikey_loaded = RSAUtils::load_base64_der_server_prikey();
+    std::string message_pt = RSAUtils::rsa_decrypt(server_prikey_loaded, message_cipher);
     //std::string message_pt = "";
     return message_pt;
 }
@@ -48,8 +48,8 @@ char* NetworkingThread::pack_message(std::string message, bool is_encrypted, int
     int packed_bytes_len = message.length() + 2;
     char* packed_bytes = new char[packed_bytes_len];
     if(is_encrypted) {
-        RSA* client_pubkey_loaded = RSAUtils::load_base64_der_client_pubkey(client_pubkey);
-        std::string encrypted_message = RSAUtils::rsa_encrypt(client_pubkey_loaded, message);
+        EVP_PKEY* client_pubkey_loaded = RSAUtils::load_base64_der_client_pubkey(client_pubkey);
+        std::string encrypted_message = RSAUtils::rsa_encrypt(message, client_pubkey_loaded);
         char_array_copy(encrypted_message.c_str(), 0, packed_bytes, 1, encrypted_message.length());
         packed_bytes[0] = ENCRYPTED_TAG;
     } else {
@@ -119,8 +119,8 @@ NetworkingThread::NetworkingThread(ServerInfoDatabaseHelper* server_info_db_help
 }
 
 void NetworkingThread::create_thread(bool* is_added, std::string server_id, server_info* server_info, PumpThread*& pump_thread_obj, SoilMoistureThread*& soil_moisture_thread_obj) {
-    th = new std::thread([this, is_added, server_id, server_info* server_info, pump_thread_obj, soil_moisture_thread_obj]() {
-        this->networking_thread_main(is_added, server_id, server_info* server_info, pump_thread_obj, soil_moisture_thread_obj);
+    th = new std::thread([this, is_added, server_id, server_info, pump_thread_obj, soil_moisture_thread_obj]() {
+        this->networking_thread_main(is_added, server_id, server_info, pump_thread_obj, soil_moisture_thread_obj);
     });
 }
 
@@ -134,9 +134,10 @@ NetworkingThread::~NetworkingThread()
     th = nullptr;
 }
 
-int NetworkingThread::networking_thread_main(bool* is_added, std::string server_id, server_info* server_info, PumpThread*& pump_thread_obj, SoilMoistureThread*& soil_moisture_thread_obj) {    //pump_thread is a reference to the pointer pointing to PumpThread. This can pass the pointer by its address (the pointer of pointer).
+int NetworkingThread::networking_thread_main(bool* is_added, std::string server_id, server_info* server_information, PumpThread*& pump_thread_obj, SoilMoistureThread*& soil_moisture_thread_obj) {    //pump_thread is a reference to the pointer pointing to PumpThread. This can pass the pointer by its address (the pointer of pointer).
     //Read server id
     //std::string server_id = ;
+    std::string server_prikey = RSAUtils::read_key_from_file(false);
 
     //int server_fd, client_socket;
     struct sockaddr_in address;
@@ -207,7 +208,7 @@ int NetworkingThread::networking_thread_main(bool* is_added, std::string server_
                 //Begin delete device
                 if(*is_added == true) {
                     //Clear server_info
-                    server_info_db_helper->clear_server_info();
+                    server_info_db_helper_ptr->clear_server_info();
 
                     //Exit the pump control thread
                     //pump_thread_obj->stop_thread = true;
@@ -217,7 +218,7 @@ int NetworkingThread::networking_thread_main(bool* is_added, std::string server_
                     //delete pump_thread_obj;
                     //pump_thread_obj = nullptr;
                     pump_thread_obj = new PumpThread(watering_record_helper_ptr, adc_hardware_ptr);
-                    pump_thread_obj->create_thread(server_info);
+                    pump_thread_obj->create_thread(server_information);
 
                     //Exit the soil moisture thread
                     //soil_moisture_thread_obj->stop_thread = true;
@@ -227,21 +228,23 @@ int NetworkingThread::networking_thread_main(bool* is_added, std::string server_
                     //delete soil_moisture_thread_obj;
                     //soil_moisture_thread_obj = nullptr;
                     soil_moisture_thread_obj = new SoilMoistureThread(adc_hardware_ptr, watering_record_helper_ptr);
-                    
+                    soil_moisture_thread_obj->create_thread();
 
                     //Clear watering info
-                    watering_record_helper->clear_record();
+                    watering_record_helper_ptr->clear_record();
 
                     //Clear keys
-                    RSAUtils::write_key_to_file(true, "");
-                    RSAUtils::write_key_to_file(false, "");
-                    server_pubkey = "";
-                    server_prikey = "";
+                    //RSAUtils::write_key_to_file(true, "");
+                    //RSAUtils::write_key_to_file(false, "");
+                    //server_pubkey = "";
+                    //server_prikey = "";
+                    remove(SERVER_PUBKEY_FILE);
+                    remove(SERVER_PRIKEY_FILE);
 
                     //Reply "finish_del_device_server()"
                     std::string sending_message = "finish_del_device_server()";
                     int sending_bytes_len;
-                    char* sending_bytes = pack_message(sending_message, true, &sending_bytes_len, server_info->client_pubkey);
+                    char* sending_bytes = pack_message(sending_message, true, &sending_bytes_len, server_information->client_pubkey);
                     send(client_socket, sending_bytes, sending_bytes_len, 0);
 
                 } else {
@@ -257,13 +260,13 @@ int NetworkingThread::networking_thread_main(bool* is_added, std::string server_
                 std::string new_scheduled_time = params[3];
 
                 //Edit info in database
-                server_info_db_helper->update_mode(new_mode, new_water_amount, new_scheduled_freq, new_scheduled_time);
+                server_info_db_helper_ptr->update_mode(new_mode, new_water_amount, new_scheduled_freq, new_scheduled_time);
 
                 //Edit info in memory
-                server_info->mode = new_mode;
-                server_info->water_amount = new_water_amount;
-                server_info->scheduled_freq = new_scheduled_freq;
-                server_info->scheduled_time = new_scheduled_time;
+                server_information->mode = new_mode;
+                server_information->water_amount = new_water_amount;
+                server_information->scheduled_freq = new_scheduled_freq;
+                server_information->scheduled_time = new_scheduled_time;
 
                 //Restart the pump thread
                 // pump_thread_obj->stop_thread = true;
@@ -273,13 +276,13 @@ int NetworkingThread::networking_thread_main(bool* is_added, std::string server_
                 delete pump_thread_obj;
                 pump_thread_obj = nullptr;
 
-                pump_thread_obj = new PumpThread(watering_record_helper, adc_hardware, std::stod(water_amount), scheduled_freq, scheduled_time);
+                pump_thread_obj = new PumpThread(watering_record_helper, adc_hardware_ptr, std::stod(new_water_amount), new_scheduled_freq, new_scheduled_time);
                 //pump_thread = new std::thread(pump_thread_obj->pump_thread_main, std::stod(water_amount), scheduled_freq, scheduled_time);
 
                 //Reply "finish_edit_server"
                 std::string sending_message = "finish_edit_server()";
                 int sending_bytes_len;
-                char* sending_bytes = pack_message(sending_message, true, &sending_bytes_len, server_info->client_pubkey);
+                char* sending_bytes = pack_message(sending_message, true, &sending_bytes_len, server_information->client_pubkey);
                 send(client_socket, sending_bytes, sending_bytes_len, 0);
                 //End edit mode
             } else if(recv_command == "watering_now"){
@@ -289,7 +292,7 @@ int NetworkingThread::networking_thread_main(bool* is_added, std::string server_
                 //Reply "watering_succeed"
                 std::string sending_message = "watering_succeed()";
                 int sending_bytes_len;
-                char* sending_bytes = pack_message(sending_message, true, &sending_bytes_len, server_info->client_pubkey);
+                char* sending_bytes = pack_message(sending_message, true, &sending_bytes_len, server_information->client_pubkey);
                 send(client_socket, sending_bytes, sending_bytes_len, 0);
 
             } else if(recv_command == "download_stat"){
@@ -306,7 +309,7 @@ int NetworkingThread::networking_thread_main(bool* is_added, std::string server_
                 //Send the aes key to the client
                 std::string sending_message = "stat_key(" + key + "," + iv + ")";
                 int sending_bytes_len;
-                char* sending_bytes = pack_message(sending_message, true, &sending_bytes_len, server_info->client_pubkey);
+                char* sending_bytes = pack_message(sending_message, true, &sending_bytes_len, server_information->client_pubkey);
                 send(client_socket, sending_bytes, sending_bytes_len, 0);
 
                 //Receive "stat_key_ok"
@@ -340,7 +343,7 @@ int NetworkingThread::networking_thread_main(bool* is_added, std::string server_
                 file.seekg(0, std::ios::beg);
 
                 // Send file size to client
-                if (sendAll(new_socket, (char*)&fileSize, sizeof(fileSize)) == -1) {
+                if (sendAll(client_socket, (char*)&fileSize, sizeof(fileSize)) == -1) {
                     std::cerr << "Failed to send file size" << std::endl;
                     file.close();
                     //close(new_socket);
@@ -349,11 +352,11 @@ int NetworkingThread::networking_thread_main(bool* is_added, std::string server_
                 }
 
                 // Send file content in chunks
-                char buffer[BLOCK_SIZE];
+                char buffer[1024];
                 while (fileSize > 0) {
-                    int chunkSize = (fileSize > BLOCK_SIZE) ? BLOCK_SIZE : fileSize;
+                    int chunkSize = (fileSize > 1024) ? 1024 : fileSize;
                     file.read(buffer, chunkSize);
-                    if (sendAll(new_socket, buffer, chunkSize) == -1) {
+                    if (sendAll(client_socket, buffer, chunkSize) == -1) {
                         std::cerr << "Failed to send file chunk" << std::endl;
                         file.close();
                         //close(new_socket);
@@ -368,12 +371,12 @@ int NetworkingThread::networking_thread_main(bool* is_added, std::string server_
 
 
             } else if(recv_command == "del_stat"){  //Delete all data
-                watering_record_helper->clear_record();
+                watering_record_helper_ptr->clear_record();
 
                 //Reply "finish_del_stat_server"
                 std::string sending_message = "finish_del_stat_server()";
                 int sending_bytes_len;
-                char* sending_bytes = pack_message(sending_message, true, &sending_bytes_len, server_info->client_pubkey);
+                char* sending_bytes = pack_message(sending_message, true, &sending_bytes_len, server_information->client_pubkey);
                 send(client_socket, sending_bytes, sending_bytes_len, 0);
             } else {
                 //Error: invalid message
@@ -397,7 +400,7 @@ int NetworkingThread::networking_thread_main(bool* is_added, std::string server_
                     //Reply "key_exchange_server(server_id)"
                     std::string sending_message = "key_exchange_server(" + server_id + ")";
                     int sending_bytes_len;
-                    char* sending_bytes = pack_message(sending_message, false, &sending_bytes_len, server_info->client_pubkey);
+                    char* sending_bytes = pack_message(sending_message, false, &sending_bytes_len, server_information->client_pubkey);
                     send(client_socket, sending_bytes, sending_bytes_len, 0);
 
                     //Receive "key_exchange_client(client_pubkey)"
@@ -419,7 +422,7 @@ int NetworkingThread::networking_thread_main(bool* is_added, std::string server_
 
                     //Reply "request_add_param(server_id)"
                     sending_message = "request_add_param(" + server_id + ")";        
-                    sending_bytes = pack_message(sending_message, true, &sending_bytes_len, server_info->client_pubkey);
+                    sending_bytes = pack_message(sending_message, true, &sending_bytes_len, server_information->client_pubkey);
                     send(client_socket, sending_bytes, sending_bytes_len, 0);
 
                     //Receive "reply_add_param(mode, water_amount, scheduled_freq, scheduled_time)"
@@ -445,7 +448,7 @@ int NetworkingThread::networking_thread_main(bool* is_added, std::string server_
 
                     //Reply "finish_add_server()"
                     sending_message = "finish_add_server()";
-                    sending_bytes = pack_message(sending_message, true, &sending_bytes_len, server_info->client_pubkey);
+                    sending_bytes = pack_message(sending_message, true, &sending_bytes_len, server_information->client_pubkey);
                     send(client_socket, sending_bytes, sending_bytes_len, 0);
 
                     //Receive "finish_add_client()"
@@ -462,22 +465,24 @@ int NetworkingThread::networking_thread_main(bool* is_added, std::string server_
                     }
 
                     //Store the data to the database
-                    server_info_db_helper->insert_record("", client_pubkey, timestamp, mode, water_amount, scheduled_freq, scheduled_time);
+                    server_info_db_helper_ptr->insert_record("", client_pubkey, timestamp, mode, water_amount, scheduled_freq, scheduled_time);
 
                     //Update the server info in memory
-                    server_info->client_pubkey = client_pubkey;
-                    server_info->client_add_time = timestamp;
-                    server_info->mode = mode;
-                    server_info->water_amount = water_amount;
-                    server_info->scheduled_freq = scheduled_freq;
-                    server_info->scheduled_time = scheduled_time;
+                    server_information->client_pubkey = client_pubkey;
+                    server_information->client_add_time = timestamp;
+                    server_information->mode = mode;
+                    server_information->water_amount = water_amount;
+                    server_information->scheduled_freq = scheduled_freq;
+                    server_information->scheduled_time = scheduled_time;
 
                     *is_added = true;
 
                     //Start pump control thread and soil moisture thread
-                    pump_thread_obj = new PumpThread(watering_record_helper, adc_hardware, std::stod(water_amount), scheduled_freq, scheduled_time);
+                    pump_thread_obj = new PumpThread(watering_record_helper_ptr, adc_hardware_ptr);
+                    pump_thread_obj->create_thread(server_information);
                     //pump_thread = new std::thread(pump_thread_obj->pump_thread_main, std::stod(water_amount), scheduled_freq, scheduled_time);
-                    soil_moisture_thread_obj = new SoilMoistureThread();
+                    soil_moisture_thread_obj = new SoilMoistureThread(adc_hardware_ptr, watering_record_helper_ptr);
+                    soil_moisture_thread_obj->create_thread();
                     //soil_moisture_thread = new std::thread(soil_moisture_thread_obj->soil_moisture_thread_main);
 
                 } else {
