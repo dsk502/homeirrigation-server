@@ -5,7 +5,7 @@
 #include <vector>
 #include "sqlite_database.hpp"
 
-#define SERVER_INFO_DB_PATH "bin/dbs/server_info.db"
+#define SERVER_INFO_DB_PATH "dbs/server_info.db"
 
 typedef struct server_info {
     std::string client_id;

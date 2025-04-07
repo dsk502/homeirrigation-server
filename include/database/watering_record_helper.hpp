@@ -6,7 +6,7 @@
 #include <fstream>
 #include "sqlite_database.hpp"
 
-#define WATERING_RECORD_DB_PATH "bin/dbs/watering_record.db"
+#define WATERING_RECORD_DB_PATH "dbs/watering_record.db"
 #define COL_TIMES_OF_WATERING 1
 #define COL_AMOUNT_OF_WATERING 2
 #define COL_SOIL_MOISTURE_PERCENTAGE 3

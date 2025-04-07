@@ -13,8 +13,8 @@ ServerInfoDatabaseHelper::~ServerInfoDatabaseHelper() {
 //Create the server_info table if not exist
 int ServerInfoDatabaseHelper::create_table_if_not_exist() {
     std::string create_server_info_sql = "CREATE TABLE IF NOT EXISTS server_info ("
-        "server_id TEXT PRIMARY KEY, is_added INTEGER, client_add_time INTEGER, "
-        "mode INTEGER, water_amount REAL, automatic_humidity REAL, "
+        "client_id INTEGER PRIMARY KEY, client_pubkey TEXT, client_add_time INTEGER, "
+        "mode INTEGER, water_amount REAL, "
         "scheduled_freq INTEGER, scheduled_time TEXT"
         ");";
     m_sqlite_database->exec(create_server_info_sql);

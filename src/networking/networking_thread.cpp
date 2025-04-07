@@ -39,7 +39,7 @@ std::string NetworkingThread::unpack_unencrypted_message(char* receive_buffer, i
 
 std::string NetworkingThread::unpack_encrypted_message(char* receive_buffer, int receive_len) {
     std::string message_cipher = unpack_unencrypted_message(receive_buffer, receive_len);
-    std::cout << message_cipher <<std::endl;
+    //std::cout << message_cipher <<std::endl;
     EVP_PKEY* server_prikey_loaded = RSAUtils::load_base64_der_server_prikey();
     std::string message_pt = RSAUtils::rsa_decrypt(server_prikey_loaded, message_cipher);
     
@@ -428,11 +428,14 @@ int NetworkingThread::networking_thread_main(bool* is_added, std::string server_
                     }
                     std::string timestamp = params[0];   //Store the timestamp
 
-                    //Reply "key_exchange_server(server_id)"
-                    std::string sending_message = "key_exchange_server(" + server_id + ")";
+                    //Reply "key_exchange_server(server_pubkey)"
+                    std::string server_pubkey = RSAUtils::read_key_from_file(true);
+                    std::string sending_message = "key_exchange_server(" + server_pubkey + ")";
                     int sending_bytes_len = 0;                   
                     char* sending_bytes = pack_message_no_encrypt(sending_message, &sending_bytes_len);                  
                     send(client_socket, sending_bytes, sending_bytes_len, 0);
+
+                    std::cout << "Add device: send server pubkey " + server_pubkey <<std::endl;
                     
                     //Receive "key_exchange_client(client_pubkey)"
                     memset(receive_buffer, 0, sizeof(receive_buffer));
@@ -449,7 +452,7 @@ int NetworkingThread::networking_thread_main(bool* is_added, std::string server_
                     if(params.size() != 1) {
                         //Error: invalid argument list
                     }
-                    std::string client_pubkey = params[0];
+                    std::string client_pubkey(params[0]);
 
                     //Reply "request_add_param(server_id)"
                     sending_message = "request_add_param(" + server_id + ")";    
@@ -491,6 +494,7 @@ int NetworkingThread::networking_thread_main(bool* is_added, std::string server_
                         //Error: invalid message
                     }
                     received_message = unpack_encrypted_message(receive_buffer, receive_len);
+                    std::cout << received_message <<std::endl;
                     recv_command = extract_command(received_message);
                     
                     if(recv_command != "finish_add_client") {

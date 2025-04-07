@@ -299,7 +299,7 @@ std::string RSAUtils::rsa_decrypt(EVP_PKEY* pkey, const std::string& encrypted_d
         return "";
     }
 
-    std::cout << encrypted_data <<std::endl;
+    //std::cout << encrypted_data <<std::endl;
     std::vector<unsigned char> der_encrypted_data = base64_decode(encrypted_data);
     if (der_encrypted_data.empty())
     {
