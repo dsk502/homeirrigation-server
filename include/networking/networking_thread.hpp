@@ -40,7 +40,9 @@ private:
     int find_char_index(char* char_array, int char_array_len, char ch);
     std::string unpack_unencrypted_message(char* receive_buffer, int receive_len);
     std::string unpack_encrypted_message(char* receive_buffer, int receive_len);
-    char* pack_message(std::string message, bool is_encrypted, int* packed_bytes_len_ret, std::string key_for_encryption);
+    //char* pack_message(std::string message, bool is_encrypted, int* packed_bytes_len_ret, std::string key_for_encryption);
+    char* pack_message_no_encrypt(std::string message, int* packed_bytes_len_ret);
+    char* pack_message_encrypt(std::string message, int* packed_bytes_len_ret, std::string client_pubkey);
     std::string extract_command(std::string message_pt);
     std::vector<std::string> extract_params(std::string message_pt);
     int sendAll(int sock, const char* buf, int len);

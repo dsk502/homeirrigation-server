@@ -98,7 +98,10 @@ int HomeIrrigationServer::server_init() {
         //m_soil_moisture_thread.detach();
 
     } else {    //If the device is not added
-        //Do nothing
+        //Init the server info object
+        m_server_info = new server_info;
+
+
     }
     m_net_thread_obj = new NetworkingThread(m_server_info_database_helper, m_watering_record_helper, m_adc_hardware);
     m_net_thread_obj->create_thread(&m_is_added, m_server_id, m_server_info, m_hard_thread_objs);
