@@ -62,7 +62,13 @@ int HomeIrrigationServer::server_init() {
     //5. Init thread objects struct
     m_hard_thread_objs = new hardware_thread_objects;
 
-    //6. Read server_info database to determine whether this device is added by the client
+    //6. Generate the server public key and private key
+    if(!RSAUtils::is_keypair_exist()) {
+        RSAUtils::generate_der_base64_key_pair();
+    }
+    
+
+    //7. Read server_info database to determine whether this device is added by the client
     int num_of_records = m_server_info_database_helper->record_num();
     if(num_of_records == 1) {
         m_is_added = true;
@@ -112,6 +118,7 @@ int HomeIrrigationServer::server_init() {
     while(true) {
         std::getline(std::cin, input);
         if(input == "exit") {
+            gpioTerminate();
             return 0;
         }
     }

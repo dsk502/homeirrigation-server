@@ -158,7 +158,7 @@ EVP_PKEY* RSAUtils::load_base64_der_server_pubkey()
     else
     {
         public_key_file.close();
-        std::cerr << "Failed to read the file" << std::endl;
+        std::cerr << "Failed to read the server public key file" << std::endl;
         return nullptr;
     }
 
@@ -192,7 +192,7 @@ EVP_PKEY* RSAUtils::load_base64_der_server_prikey()
     else
     {
         private_key_file.close();
-        std::cerr << "Failed to read the file" << std::endl;
+        std::cerr << "Failed to read the server private key file" << std::endl;
         return nullptr;
     }
 
@@ -299,6 +299,7 @@ std::string RSAUtils::rsa_decrypt(EVP_PKEY* pkey, const std::string& encrypted_d
         return "";
     }
 
+    std::cout << encrypted_data <<std::endl;
     std::vector<unsigned char> der_encrypted_data = base64_decode(encrypted_data);
     if (der_encrypted_data.empty())
     {
@@ -372,7 +373,7 @@ std::string RSAUtils::read_key_from_file(bool is_pubkey) {
         return key;
     } else {
         key_file.close();
-        std::cerr << "Failed to read the file" << std::endl;
+        std::cerr << "Failed to read the key file" << std::endl;
         return "";
     }
 }

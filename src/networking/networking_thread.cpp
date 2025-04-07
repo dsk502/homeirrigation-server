@@ -39,35 +39,12 @@ std::string NetworkingThread::unpack_unencrypted_message(char* receive_buffer, i
 
 std::string NetworkingThread::unpack_encrypted_message(char* receive_buffer, int receive_len) {
     std::string message_cipher = unpack_unencrypted_message(receive_buffer, receive_len);
+    std::cout << message_cipher <<std::endl;
     EVP_PKEY* server_prikey_loaded = RSAUtils::load_base64_der_server_prikey();
     std::string message_pt = RSAUtils::rsa_decrypt(server_prikey_loaded, message_cipher);
-    //std::string message_pt = "";
+    
     return message_pt;
 }
-
-/*
-char* NetworkingThread::pack_message(std::string message, bool is_encrypted, int* packed_bytes_len_ret, std::string client_pubkey) {
-    
-    int packed_bytes_len = message.length() + 2;
-    
-    char* packed_bytes = new char[packed_bytes_len];
-    
-    if(is_encrypted) {
-        EVP_PKEY* client_pubkey_loaded = RSAUtils::load_base64_der_client_pubkey(client_pubkey);
-        std::string encrypted_message = RSAUtils::rsa_encrypt(client_pubkey_loaded, message);
-        char_array_copy(encrypted_message.c_str(), 0, packed_bytes, 1, encrypted_message.length());
-        packed_bytes[0] = ENCRYPTED_TAG;
-    } else {
-        packed_bytes[0] = UNENCRYPTED_TAG;
-        
-        char_array_copy(message.c_str(), 0, packed_bytes, 1, message.length());
-    }
-    
-    packed_bytes[packed_bytes_len - 1] = '\n';
-    *packed_bytes_len_ret = packed_bytes_len;
-    return packed_bytes;
-}
-*/
 
 char* NetworkingThread::pack_message_no_encrypt(std::string message, int* packed_bytes_len_ret) {
     //Create the result char array
@@ -91,7 +68,24 @@ char* NetworkingThread::pack_message_no_encrypt(std::string message, int* packed
 char* NetworkingThread::pack_message_encrypt(std::string message, int* packed_bytes_len_ret, std::string client_pubkey) {
     EVP_PKEY* client_pubkey_loaded = RSAUtils::load_base64_der_client_pubkey(client_pubkey);
     std::string encrypted_message = RSAUtils::rsa_encrypt(client_pubkey_loaded, message);
-    return pack_message_no_encrypt(encrypted_message, packed_bytes_len_ret);
+
+    //Create the result char array
+    int packed_bytes_len = encrypted_message.length() + 2;
+    char* packed_bytes = new char[packed_bytes_len];
+
+    //Set the tag
+    packed_bytes[0] = ENCRYPTED_TAG;
+ 
+    //Copy the string into the result array
+    char_array_copy(encrypted_message.c_str(), 0, packed_bytes, 1, encrypted_message.length());
+
+    //Set the ending '\n'
+    packed_bytes[packed_bytes_len - 1] = '\n';
+
+    //Return result
+    *packed_bytes_len_ret = packed_bytes_len;
+    return packed_bytes;
+    //return pack_message_no_encrypt(encrypted_message, packed_bytes_len_ret);
 }
 
 std::string NetworkingThread::extract_command(std::string message_pt) {
@@ -419,7 +413,7 @@ int NetworkingThread::networking_thread_main(bool* is_added, std::string server_
         } else if(receive_buffer[0] == UNENCRYPTED_TAG) {    //Unencrypted message
             std::string received_message = unpack_unencrypted_message(receive_buffer, receive_len);
             std::string recv_command = extract_command(received_message);
-            std::cout << received_message <<std::endl;
+            //std::cout << received_message <<std::endl;
             //std::cout << recv_command << std::endl;
 
             if(recv_command == "add_device") {
@@ -447,7 +441,6 @@ int NetworkingThread::networking_thread_main(bool* is_added, std::string server_
                         //Error: invalid message
                     }
                     received_message = unpack_unencrypted_message(receive_buffer, receive_len);
-                    //std::cout << received_message <<std::endl;
                     recv_command = extract_command(received_message);
                     if(recv_command != "key_exchange_client") {
                         //Error: message sequence error
@@ -456,13 +449,13 @@ int NetworkingThread::networking_thread_main(bool* is_added, std::string server_
                     if(params.size() != 1) {
                         //Error: invalid argument list
                     }
-                    //std::cout << params[0] <<std::endl;
                     std::string client_pubkey = params[0];
 
                     //Reply "request_add_param(server_id)"
                     sending_message = "request_add_param(" + server_id + ")";    
                     sending_bytes = pack_message_encrypt(sending_message, &sending_bytes_len, client_pubkey);
                     send(client_socket, sending_bytes, sending_bytes_len, 0);
+                    std::cout << "Replied request_add_param" <<std::endl;
 
                     //Receive "reply_add_param(mode, water_amount, scheduled_freq, scheduled_time)"
                     memset(receive_buffer, 0, sizeof(receive_buffer));
@@ -470,7 +463,7 @@ int NetworkingThread::networking_thread_main(bool* is_added, std::string server_
                     if(receive_buffer[0] != (char)0x02) {
                         //Error: invalid message
                     }
-                    received_message = unpack_encrypted_message(receive_buffer, receive_len);
+                    received_message = unpack_encrypted_message(receive_buffer, receive_len);   //Error here
                     recv_command = extract_command(received_message);
                     
                     if(recv_command != "reply_add_param") {
@@ -484,6 +477,7 @@ int NetworkingThread::networking_thread_main(bool* is_added, std::string server_
                     std::string water_amount = params[1];
                     std::string scheduled_freq = params[2];
                     std::string scheduled_time = params[3];
+                    std::cout << "Received reply_add_param" <<std::endl;
 
                     //Reply "finish_add_server()"
                     sending_message = "finish_add_server()";

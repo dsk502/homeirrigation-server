@@ -13,8 +13,8 @@
 
 #include <openssl/pem.h>
 
-#define SERVER_PUBKEY_FILE "keys/server_pubkey.der"
-#define SERVER_PRIKEY_FILE "keys/server_prikey.der"
+#define SERVER_PUBKEY_FILE "bin/keys/server_pubkey.der"
+#define SERVER_PRIKEY_FILE "bin/keys/server_prikey.der"
 
 class RSAUtils {
 public:
