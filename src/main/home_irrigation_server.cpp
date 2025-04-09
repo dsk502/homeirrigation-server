@@ -51,10 +51,12 @@ int HomeIrrigationServer::server_init() {
         server_id_file_write.close();
     }
 
-    //3. Init the server info database if there is nothing in it.
+    //3. Init the server info database and watering record database if there is nothing in it.
     m_server_info_database_helper = new ServerInfoDatabaseHelper();
     m_server_info_database_helper->create_table_if_not_exist();
-
+    m_watering_record_helper = new WateringRecordHelper();
+    m_watering_record_helper->create_table_if_not_exist();
+    
     //4. Init the ADC hardware
     m_adc_hardware = new ADCHardware();
     m_adc_hardware->init_gpio();

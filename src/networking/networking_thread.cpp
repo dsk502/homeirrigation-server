@@ -166,12 +166,14 @@ int NetworkingThread::networking_thread_main(bool* is_added, std::string server_
     //std::string server_id = ;
     //std::string server_prikey = RSAUtils::read_key_from_file(false);
 
+    while(true) {
     //int server_fd, client_socket;
     struct sockaddr_in address;
     int addrlen = sizeof(address);
     char receive_buffer[1024] = {0};
     //const char* response = "Hello from server";
 
+    
     // 创建TCP套接字
     if ((server_fd = socket(AF_INET, SOCK_STREAM, 0)) == 0) {
         perror("socket failed");
@@ -208,7 +210,7 @@ int NetworkingThread::networking_thread_main(bool* is_added, std::string server_
 
     std::cout << "Server listening on port 8080..." << std::endl;
 
-    while(true) {
+    
         // 接受客户端连接
         if ((client_socket = accept(server_fd, (struct sockaddr*)&address, (socklen_t*)&addrlen)) < 0) {
             perror("accept");
@@ -224,14 +226,14 @@ int NetworkingThread::networking_thread_main(bool* is_added, std::string server_
             std::cout << "Client disconnected." << std::endl;
             break;  // 客户端断开连接
         }
-
+        std::cout << "Networking: Message saved to buffer" << std::endl;
         //Process the data from buffer
         if(receive_buffer[0] == ENCRYPTED_TAG) {   //Encrypted message
-           
+            std::cout << "Networking: Message is encrypted" <<std::endl;
             std::string received_message = unpack_encrypted_message(receive_buffer, receive_len);
             std::string recv_command = extract_command(received_message);
-            
-            if(recv_command == "delete_device") {
+            std::cout << "Decrypted message:" << received_message << std::endl;
+            if(recv_command == "del_device") {
                 //Begin delete device
                 if(*is_added == true) {
                     //Clear server_info
@@ -265,15 +267,17 @@ int NetworkingThread::networking_thread_main(bool* is_added, std::string server_
                     //RSAUtils::write_key_to_file(false, "");
                     //server_pubkey = "";
                     //server_prikey = "";
-                    remove(SERVER_PUBKEY_FILE);
-                    remove(SERVER_PRIKEY_FILE);
+                    //remove(SERVER_PUBKEY_FILE);
+                    //remove(SERVER_PRIKEY_FILE);
 
                     //Reply "finish_del_device_server()"
                     std::string sending_message = "finish_del_device_server()";
                     int sending_bytes_len;
                     char* sending_bytes = pack_message_encrypt(sending_message, &sending_bytes_len, server_information->client_pubkey);
                     send(client_socket, sending_bytes, sending_bytes_len, 0);
-
+                    
+                    *is_added = false;
+                    std::cout << "Device Deleted" <<std::endl;
                 } else {
                     //Error
                 }
@@ -428,8 +432,15 @@ int NetworkingThread::networking_thread_main(bool* is_added, std::string server_
                     }
                     std::string timestamp = params[0];   //Store the timestamp
 
-                    //Reply "key_exchange_server(server_pubkey)"
+                    //Load the server public key
                     std::string server_pubkey = RSAUtils::read_key_from_file(true);
+                    /*
+                    if(!RSAUtils::is_keypair_exist()) {
+                        RSAUtils::generate_der_base64_key_pair();
+                    }
+                    */
+
+                    //Reply "key_exchange_server(server_pubkey)"                   
                     std::string sending_message = "key_exchange_server(" + server_pubkey + ")";
                     int sending_bytes_len = 0;                   
                     char* sending_bytes = pack_message_no_encrypt(sending_message, &sending_bytes_len);                  
@@ -458,6 +469,7 @@ int NetworkingThread::networking_thread_main(bool* is_added, std::string server_
                     sending_message = "request_add_param(" + server_id + ")";    
                     sending_bytes = pack_message_encrypt(sending_message, &sending_bytes_len, client_pubkey);
                     send(client_socket, sending_bytes, sending_bytes_len, 0);
+
                     std::cout << "Replied request_add_param" <<std::endl;
 
                     //Receive "reply_add_param(mode, water_amount, scheduled_freq, scheduled_time)"
@@ -503,7 +515,7 @@ int NetworkingThread::networking_thread_main(bool* is_added, std::string server_
 
                     //Store the data to the database
                     server_info_db_helper_ptr->insert_record(timestamp, client_pubkey, timestamp, mode, water_amount, scheduled_freq, scheduled_time);
-
+                    
                     //Update the server info in memory
                     server_information->client_pubkey = client_pubkey;
                     server_information->client_add_time = timestamp;
@@ -537,11 +549,12 @@ int NetworkingThread::networking_thread_main(bool* is_added, std::string server_
         //send(client_socket, response, strlen(response), 0);
         //std::cout << "Response sent to client." << std::endl;
         close(client_socket);
+        close(server_fd);
     }
 
     // 关闭套接字
     
-    close(server_fd);
+    
 
     return 0;
 }
