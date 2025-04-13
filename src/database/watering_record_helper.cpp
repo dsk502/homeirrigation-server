@@ -11,7 +11,7 @@ WateringRecordHelper::~WateringRecordHelper() {
 }
 
 int WateringRecordHelper::create_table_if_not_exist() {
-    std::string create_table_sql = "CREATE TABLE IF NOT EXISTS watering_record (day INTEGER PRIMARY KEY, times_of_watering INTEGER, soil_moisture_percentage REAL);";
+    std::string create_table_sql = "CREATE TABLE IF NOT EXISTS watering_record (day INTEGER PRIMARY KEY, times_of_watering INTEGER, amount_of_watering REAL, soil_moisture_percentage REAL);";
     m_sqlite_database->exec(create_table_sql);
     return 0;
 }
