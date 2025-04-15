@@ -1,6 +1,8 @@
 
 #include "networking/networking_thread.hpp"
 #include <iostream>
+#include <algorithm>
+
 #define ENCRYPTED_TAG (char)0x02
 #define UNENCRYPTED_TAG (char)0x01
 
@@ -240,24 +242,14 @@ int NetworkingThread::networking_thread_main(bool* is_added, std::string server_
                     server_info_db_helper_ptr->clear_server_info();
 
                     //Exit the pump control thread
-                    //pump_thread_obj->stop_thread = true;
-                    //pump_thread->join();
                     delete hard_thread_objs->pump_thread_obj;
-                    //pump_thread = nullptr;
-                    //delete pump_thread_obj;
-                    //pump_thread_obj = nullptr;
-                    hard_thread_objs->pump_thread_obj = new PumpThread(watering_record_helper_ptr, adc_hardware_ptr);
-                    hard_thread_objs->pump_thread_obj->create_thread(server_information);
+                    //hard_thread_objs->pump_thread_obj = new PumpThread(watering_record_helper_ptr, adc_hardware_ptr);
+                    //hard_thread_objs->pump_thread_obj->create_thread(server_information);
 
                     //Exit the soil moisture thread
-                    //soil_moisture_thread_obj->stop_thread = true;
-                    //soil_moisture_thread->join();
                     delete hard_thread_objs->soil_moisture_thread_obj;
-                    //soil_moisture_thread = nullptr;
-                    //delete soil_moisture_thread_obj;
-                    //soil_moisture_thread_obj = nullptr;
-                    hard_thread_objs->soil_moisture_thread_obj = new SoilMoistureThread(adc_hardware_ptr, watering_record_helper_ptr);
-                    hard_thread_objs->soil_moisture_thread_obj->create_thread();
+                    //hard_thread_objs->soil_moisture_thread_obj = new SoilMoistureThread(adc_hardware_ptr, watering_record_helper_ptr);
+                    //hard_thread_objs->soil_moisture_thread_obj->create_thread();
 
                     //Clear watering info
                     watering_record_helper_ptr->clear_record();
@@ -265,8 +257,6 @@ int NetworkingThread::networking_thread_main(bool* is_added, std::string server_
                     //Clear keys
                     //RSAUtils::write_key_to_file(true, "");
                     //RSAUtils::write_key_to_file(false, "");
-                    //server_pubkey = "";
-                    //server_prikey = "";
                     //remove(SERVER_PUBKEY_FILE);
                     //remove(SERVER_PRIKEY_FILE);
 
@@ -365,11 +355,37 @@ int NetworkingThread::networking_thread_main(bool* is_added, std::string server_
                 std::ifstream file("temp/watering_record_" + server_id + "_encrypted.db", std::ios::binary | std::ios::ate);
                 if (!file) {
                     std::cerr << "Failed to open file" << std::endl;
+                    continue;
                     //close(new_socket);
                     //close(server_fd);
                     //return -1;
                 }
 
+                // 获取文件大小
+                file.seekg(0, std::ios::end);
+                std::streamsize fileSize = file.tellg();
+                file.seekg(0, std::ios::beg);
+
+                // 发送文件大小
+                if (send(client_socket, &fileSize, sizeof(fileSize), 0) == -1) {
+                    std::cerr << "发送文件大小失败" << std::endl;
+                    //return 1;
+                }
+
+                // 发送文件内容
+                char buffer[1024];
+                while (fileSize > 0) {
+                    file.read(buffer, std::min<long>(fileSize, sizeof(buffer)));
+                    std::streamsize bytesRead = file.gcount();
+                    if (send(client_socket, buffer, bytesRead, 0) == -1) {
+                        std::cerr << "发送文件内容失败" << std::endl;
+                        //return 1;
+                    }
+                    fileSize -= bytesRead;
+                }
+
+                file.close();
+                /*
                 // Get file size
                 std::streamsize fileSize = file.tellg();
                 file.seekg(0, std::ios::beg);
@@ -399,6 +415,7 @@ int NetworkingThread::networking_thread_main(bool* is_added, std::string server_
                 }
 
                 file.close();
+                */
 
 
 
