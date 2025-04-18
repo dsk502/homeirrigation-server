@@ -138,14 +138,19 @@ int PumpThread::run_pump(double water_amount, std::chrono::system_clock::time_po
     gpioSetMode(PUMP_PIN, PI_OUTPUT);
 
     //1. Determine whether water tank has enough water
+    //Use the result of the second time to minimize the error
+    adc_hardware_ptr->read_water_level();
     double water_level = adc_hardware_ptr->read_water_level();
-    //if(water_level < 20.0) {
-        //return 1;
-    //}
+    if(water_level < 17.5) {
+        std::cout << "Water is not enough: " << water_level << std::endl;
+        return 1;
+    }
+
+    std::cout << "Water is enough: " << water_level << std::endl;
 
     //2. Start the pump
     gpioWrite(PUMP_PIN, PI_ON);  //Set the pin to high voltage 
-    gpioDelay(500000 * 10); //Wait 500ms*10=5s. The high voltage will be there for 5s.
+    gpioDelay(high_voltage_time(water_amount));
     gpioWrite(PUMP_PIN, PI_OFF);
  
     //3. Extract date (YYYYMMDD) from the timepoint parameter
@@ -162,4 +167,16 @@ int PumpThread::run_pump(double water_amount, std::chrono::system_clock::time_po
     watering_record_helper_ptr->update_record(date_str, COL_AMOUNT_OF_WATERING, std::to_string(water_amount), true);
 
     return 0;
+}
+
+//5*10^6 μs <- 150 ml
+//3*10^6 μs <- 100 ml
+//let y = time (μs) and x = water_amount (ml), then y = 40000x - 1000000
+int PumpThread::high_voltage_time(double water_amount) {
+    int time_microsecond = (int)(40000 * water_amount - 1000000);
+    if(time_microsecond > 0) {
+        return time_microsecond;
+    } else {
+        return 0;
+    }
 }

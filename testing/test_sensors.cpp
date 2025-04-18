@@ -26,11 +26,11 @@ int i2cOpen(int bus, int address) {
     sprintf(device, "/dev/i2c-%d", bus);
     int handle = ::open(device, O_RDWR);
     if (handle < 0) {
-        std::cerr << "Failed to open I2C device" << std::endl;
+        //std::cerr << "Failed to open I2C device" << std::endl;
         return -1;
     }
     if (ioctl(handle, I2C_SLAVE, address) < 0) {
-        std::cerr << "Failed to set I2C device address" << std::endl;
+        //std::cerr << "Failed to set I2C device address" << std::endl;
         ::close(handle);
         return -1;
     }
@@ -79,19 +79,13 @@ int main() {
     }
 
     //Create two threads to read soil moisture and water level seperately
-    std::thread soilThread(readSoilHumidity, handle);
+    //std::thread soilThread(readSoilHumidity, handle);
     std::thread waterThread(readWaterLevel, handle);
 
-    soilThread.join();
+    //soilThread.join();
     waterThread.join();
 
     ::close(handle);
     gpioTerminate();
     return 0;
 }
-
-/*
-    确保树莓派已启用I2C接口，并安装了pigpio库。
-    根据实际连接的传感器和PCF8591模块，可能需要调整代码中的通道号和I2C地址。
-    如果传感器的输出范围不是0-1023，需要根据实际范围调整计算公式。
-*/

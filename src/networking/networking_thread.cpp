@@ -162,47 +162,47 @@ NetworkingThread::~NetworkingThread()
 int NetworkingThread::networking_thread_main(bool* is_added, std::string server_id, server_info* server_information, hardware_thread_objects* hard_thread_objs) {    //pump_thread is a reference to the pointer pointing to PumpThread. This can pass the pointer by its address (the pointer of pointer).
 
     while(true) {
-    //int server_fd, client_socket;
-    struct sockaddr_in address;
-    int addrlen = sizeof(address);
-    char receive_buffer[1024] = {0};
-    //const char* response = "Hello from server";
+        //int server_fd, client_socket;
+        struct sockaddr_in address;
+        int addrlen = sizeof(address);
+        char receive_buffer[1024] = {0};
+        //const char* response = "Hello from server";
 
-    
-    //Create TCP socket
-    if ((server_fd = socket(AF_INET, SOCK_STREAM, 0)) == 0) {
-        perror("socket failed");
-        //exit(EXIT_FAILURE);
-        return -1;
-    }
-
-    // Forcefully attaching socket to the port 8080
-    int opt = 1;
-    if (setsockopt(server_fd, SOL_SOCKET, SO_REUSEADDR | SO_REUSEPORT, &opt, sizeof(opt))) {
-        perror("Setsockopt failed");
-        //exit(EXIT_FAILURE);
-        return -1;
-    }
-
-    //Set address and port of the server
-    address.sin_family = AF_INET;
-    address.sin_addr.s_addr = INADDR_ANY;
-    address.sin_port = htons(8080);
-
-    //Bind the socket
-    if (bind(server_fd, (struct sockaddr*)&address, sizeof(address)) < 0) {
-        perror("bind failed");
         
-        return -1;
-    }
+        //Create TCP socket
+        if ((server_fd = socket(AF_INET, SOCK_STREAM, 0)) == 0) {
+            perror("socket failed");
+            //exit(EXIT_FAILURE);
+            return -1;
+        }
 
-    //Start listening
-    if (listen(server_fd, 3) < 0) {
-        perror("listen");
-        return -1;
-    }
+        // Forcefully attaching socket to the port 8080
+        int opt = 1;
+        if (setsockopt(server_fd, SOL_SOCKET, SO_REUSEADDR | SO_REUSEPORT, &opt, sizeof(opt))) {
+            perror("Setsockopt failed");
+            //exit(EXIT_FAILURE);
+            return -1;
+        }
 
-    std::cout << "Server listening on port 8080..." << std::endl;
+        //Set address and port of the server
+        address.sin_family = AF_INET;
+        address.sin_addr.s_addr = INADDR_ANY;
+        address.sin_port = htons(14000);
+
+        //Bind the socket
+        if (bind(server_fd, (struct sockaddr*)&address, sizeof(address)) < 0) {
+            perror("bind failed");
+            
+            return -1;
+        }
+
+        //Start listening
+        if (listen(server_fd, 3) < 0) {
+            perror("listen");
+            return -1;
+        }
+
+        std::cout << "Server listening on port 14000..." << std::endl;
     
         //Accept client connection
         if ((client_socket = accept(server_fd, (struct sockaddr*)&address, (socklen_t*)&addrlen)) < 0) {

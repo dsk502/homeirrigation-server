@@ -37,6 +37,7 @@ private:
     bool stop_thread = false;
     std::thread* th;
 
+    int high_voltage_time(double water_amount);
 };
 
 #endif

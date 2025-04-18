@@ -30,12 +30,14 @@ int ADCHardware::i2c_open(int bus, int address) {
 
 //Read PCF8591 channel data
 int ADCHardware::read_pcf8591_channel(int channel) {
-    std::lock_guard<std::mutex> lock(m_i2c_mutex); // auto lock and unlock
+    m_i2c_mutex.lock(); // auto lock and unlock
     char command = channel; // set channel
     ::write(m_handle, &command, 1);
     char data;
     ::read(m_handle, &data, 1);
+    m_i2c_mutex.unlock();
     return static_cast<int>(data);
+    
 }
 
 double ADCHardware::read_soil_humidity() {
