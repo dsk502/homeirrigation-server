@@ -272,8 +272,6 @@ int NetworkingThread::networking_thread_main(bool* is_added, std::string server_
 
                 //Restart the pump thread
                 delete hard_thread_objs->pump_thread_obj;
-                //hard_thread_objs->pump_thread_obj = nullptr;
-
                 hard_thread_objs->pump_thread_obj = new PumpThread(watering_record_helper_ptr, adc_hardware_ptr);
                 hard_thread_objs->pump_thread_obj->create_thread(server_information);
 
