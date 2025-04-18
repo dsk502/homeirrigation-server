@@ -8,12 +8,12 @@ bool SQLiteDatabase::open(const std::string& db_file_path) {
     return true;
 }
 
-// 关闭数据库连接
+//Close SQL connection
 void SQLiteDatabase::close() {
     sqlite3_close(m_db);
 }
 
-// 执行SQL语句
+//Execute SQL command
 bool SQLiteDatabase::exec(const std::string& sql) {
     char* err_msg = nullptr;
     int rc = sqlite3_exec(m_db, sql.c_str(), nullptr, nullptr, &err_msg);
@@ -25,7 +25,7 @@ bool SQLiteDatabase::exec(const std::string& sql) {
     return true;
 }
 
-// 查询数据
+//Query data
 std::vector<std::vector<std::string>> SQLiteDatabase::query(const std::string& sql) {
     std::vector<std::vector<std::string>> results;
     sqlite3_stmt* stmt;

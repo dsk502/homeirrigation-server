@@ -11,16 +11,16 @@ private:
     sqlite3* m_db;
 
 public:
-    // 打开数据库连接
+    //Open database connection
     bool open(const std::string& db_file_path);
 
-    // 关闭数据库连接
+    //Close database
     void close();
 
-    // 执行SQL语句
+    //Execute SQL command
     bool exec(const std::string& sql);
 
-    // 查询数据
+    //Query data
     std::vector<std::vector<std::string>> query(const std::string& sql);
 };
 

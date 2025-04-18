@@ -19,8 +19,7 @@
 
 class NetworkingThread {
 public:
-    std::thread* th;
-    //bool stop_thread;
+    
 
     int networking_thread_main(bool* is_added, std::string server_id, server_info* server_info, hardware_thread_objects* hard_thread_objs);
     
@@ -33,6 +32,8 @@ private:
     ADCHardware* adc_hardware_ptr;
     ServerInfoDatabaseHelper* server_info_db_helper_ptr;
 
+    std::thread* th;
+    
     int server_fd;
     int client_socket;
 

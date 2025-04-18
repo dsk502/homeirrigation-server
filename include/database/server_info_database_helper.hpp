@@ -3,6 +3,7 @@
 
 #include <string>
 #include <vector>
+#include <mutex>
 #include "sqlite_database.hpp"
 
 #define SERVER_INFO_DB_PATH "dbs/server_info.db"
@@ -17,11 +18,11 @@ typedef struct server_info {
     std::string scheduled_time;
 } server_info;
 
-
 class ServerInfoDatabaseHelper {
 private:
     SQLiteDatabase* m_sqlite_database;
-
+    std::mutex server_info_mtx;
+    
 public:
     ServerInfoDatabaseHelper();
     ~ServerInfoDatabaseHelper();

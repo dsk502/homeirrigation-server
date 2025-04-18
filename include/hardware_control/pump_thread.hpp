@@ -3,6 +3,7 @@
 
 #include <chrono>
 #include <thread>
+#include <atomic>
 #include "database/watering_record_helper.hpp"
 #include "database/server_info_database_helper.hpp"
 #include "adc_hardware.hpp"
@@ -20,21 +21,22 @@
 
 class PumpThread {
 public:
-    bool water_immediately = false; //Will be edited by multiple threads
-    bool stop_thread = false;
-    std::thread* th;
-
+    std::atomic<bool> water_immediately; //Will be edited by multiple threads, so atomic
+    
     PumpThread(WateringRecordHelper* watering_record_helper, ADCHardware* adc_hardware);
-    void create_thread(server_info* server_information);
+    void create_thread(const server_info* server_information);
     ~PumpThread();
 
     int run_pump(double water_amount, std::chrono::system_clock::time_point now);
-    int pump_thread_main(server_info* server_information);
+    int pump_thread_main(const server_info* server_information);
 
 private:
     WateringRecordHelper* watering_record_helper_ptr;
     ADCHardware* adc_hardware_ptr;
-    //std::mutex mtx_;
+
+    bool stop_thread = false;
+    std::thread* th;
+
 };
 
 #endif

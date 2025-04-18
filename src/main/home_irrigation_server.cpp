@@ -3,7 +3,7 @@
 std::string HomeIrrigationServer::get_raspberry_pi_id() {
     std::ifstream cpuinfo("/proc/cpuinfo");
     std::string line;
-    std::string serial = "0000000000000000"; // 默认值
+    std::string serial = "0000000000000000"; //Default value
 
     if (cpuinfo.is_open()) {
         while (std::getline(cpuinfo, line)) {
@@ -20,7 +20,7 @@ std::string HomeIrrigationServer::get_raspberry_pi_id() {
         }
         cpuinfo.close();
     } else {
-        std::cerr << "无法打开 /proc/cpuinfo 文件" << std::endl;
+        std::cerr << "Failed to open /proc/cpuinfo" << std::endl;
     }
 
     return serial;
@@ -68,7 +68,6 @@ int HomeIrrigationServer::server_init() {
     if(!RSAUtils::is_keypair_exist()) {
         RSAUtils::generate_der_base64_key_pair();
     }
-    
 
     //7. Read server_info database to determine whether this device is added by the client
     int num_of_records = m_server_info_database_helper->record_num();
@@ -94,27 +93,18 @@ int HomeIrrigationServer::server_init() {
         //Start the pump thread
         m_hard_thread_objs->pump_thread_obj = new PumpThread(m_watering_record_helper, m_adc_hardware);
         m_hard_thread_objs->pump_thread_obj->create_thread(m_server_info);
-        //m_pump_thread_obj->th = new std::thread(m_pump_thread_obj->pump_thread_main, m_server_info->scheduled_freq, m_server_info->scheduled_time);
-        //m_pump_thread = new std::thread(m_pump_thread_obj->pump_thread_main, m_server_info->scheduled_freq, m_server_info->scheduled_time);
-        //m_pump_thread.detach();
 
         //Start the soil moisture thread
         m_hard_thread_objs->soil_moisture_thread_obj = new SoilMoistureThread(m_adc_hardware, m_watering_record_helper);
         m_hard_thread_objs->soil_moisture_thread_obj->create_thread();
-        //m_soil_moisture_thread_obj->th = new std::thread(m_soil_moisture_thread_obj->soil_moisture_thread_main);
-        //m_soil_moisture_thread = new std::thread(m_soil_moisture_thread_obj->soil_moisture_thread_main);
-        //m_soil_moisture_thread.detach();
 
     } else {    //If the device is not added
         //Init the server info object
         m_server_info = new server_info;
 
-
     }
     m_net_thread_obj = new NetworkingThread(m_server_info_database_helper, m_watering_record_helper, m_adc_hardware);
     m_net_thread_obj->create_thread(&m_is_added, m_server_id, m_server_info, m_hard_thread_objs);
-    //m_net_thread = new std::thread(m_net_thread_obj->networking_thread_main);
-    //m_net_thread.detach();
 
     std::string input;
     while(true) {

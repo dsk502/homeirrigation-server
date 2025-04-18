@@ -5,10 +5,10 @@
 PumpThread::PumpThread(WateringRecordHelper* watering_record_helper, ADCHardware* adc_hardware) {
     watering_record_helper_ptr = watering_record_helper;
     adc_hardware_ptr = adc_hardware;
-    
+    water_immediately.store(false);
 }
 
-void PumpThread::create_thread(server_info* server_information)
+void PumpThread::create_thread(const server_info* server_information)
 {
     th = new std::thread([this, server_information]() {
         this->pump_thread_main(server_information);
@@ -23,17 +23,12 @@ PumpThread::~PumpThread()
     th = nullptr;
 }
 
-int PumpThread::pump_thread_main(server_info* server_information) {
+int PumpThread::pump_thread_main(const server_info* server_information) {
     //Get the current date and time
     auto start_time_point = std::chrono::system_clock::now();
     std::time_t start_c = std::chrono::system_clock::to_time_t(start_time_point);
     std::tm* ltm_start = std::localtime(&start_c);  //local time
 
-    /*
-    int year = 1900 + ltm->tm_year;
-    int month = 1 + ltm->tm_mon;    // tm_mon是从0开始的月份（0代表1月）
-    int mday = ltm->tm_mday;         // tm_mday是日期（1-31）
-    */
     int start_hour = ltm_start->tm_hour;    //hour
     int start_min = ltm_start->tm_min;   //minute
     
@@ -86,9 +81,10 @@ int PumpThread::pump_thread_main(server_info* server_information) {
             run_pump(std::stod(server_information->water_amount), now);
             break;
         }
-        if(water_immediately) {
+        bool water_imm = water_immediately.load();
+        if(water_imm) {
             run_pump(std::stod(server_information->water_amount), now);
-            water_immediately = false;
+            water_immediately.store(false);
         }
         if(stop_thread) {
             return 0;
@@ -105,9 +101,10 @@ int PumpThread::pump_thread_main(server_info* server_information) {
                 run_pump(std::stod(server_information->water_amount), now);
                 break;
             }
-            if(water_immediately) {
+            bool water_imm = water_immediately.load();
+            if(water_imm) {
                 run_pump(std::stod(server_information->water_amount), now);
-                water_immediately = false;
+                water_immediately.store(false);
             }
             if(stop_thread) {
                 return 0;
@@ -116,7 +113,6 @@ int PumpThread::pump_thread_main(server_info* server_information) {
         }
     }
     return 0;
-    
 
 }
 

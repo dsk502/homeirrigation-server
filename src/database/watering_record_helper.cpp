@@ -12,7 +12,9 @@ WateringRecordHelper::~WateringRecordHelper() {
 
 int WateringRecordHelper::create_table_if_not_exist() {
     std::string create_table_sql = "CREATE TABLE IF NOT EXISTS watering_record (day INTEGER PRIMARY KEY, times_of_watering INTEGER, amount_of_watering REAL, soil_moisture_percentage REAL);";
+    water_rec_mtx.lock();
     m_sqlite_database->exec(create_table_sql);
+    water_rec_mtx.unlock();
     return 0;
 }
 
@@ -40,26 +42,33 @@ int WateringRecordHelper::update_record(std::string date_str, int col_num, std::
     } else {
         col_name = "soil_moisture_percentage";
     }
-    //std::string write_sql = "INSERT OR REPLACE INTO watering_record (day, times_of_watering, amount_of_watering, soil_moisture_percentage) VALUES"
     std::string write_sql = "UPDATE watering_record SET " + col_name + " = " + data_to_write + " where day = " + date_str + ";"; 
+    water_rec_mtx.lock();
     m_sqlite_database->exec(write_sql);
+    water_rec_mtx.unlock();
     return 0;
 }
 
 void WateringRecordHelper::create_record_if_not_exist(std::string date_str) {
     std::string create_record_sql = "INSERT OR IGNORE INTO watering_record (day, times_of_watering, amount_of_watering, soil_moisture_percentage) VALUES (" + date_str + ", 0, 0, 0);";
+    water_rec_mtx.lock();
     m_sqlite_database->exec(create_record_sql);
+    water_rec_mtx.unlock();
 }
 
 int WateringRecordHelper::delete_record(std::string date_str) {
     std::string delete_record_sql = "DELETE FROM watering_record WHERE day = " + date_str + ";";
+    water_rec_mtx.lock();
     m_sqlite_database->exec(delete_record_sql);
+    water_rec_mtx.unlock();
     return 0;
 }
 
 int WateringRecordHelper::clear_record() {
     std::string clear_record_sql = "DELETE FROM watering_record;";
+    water_rec_mtx.lock();
     m_sqlite_database->exec(clear_record_sql);
+    water_rec_mtx.unlock();
     return 0;
 }
 

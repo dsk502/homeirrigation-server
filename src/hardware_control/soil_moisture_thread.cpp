@@ -31,7 +31,7 @@ int SoilMoistureThread::soil_moisture_thread_main() {
 
         //Create a std::tm object
         std::tm start_tm;
-        std::memset(&start_tm, 0, sizeof(start_tm)); // 初始化为0
+        std::memset(&start_tm, 0, sizeof(start_tm)); // Init with 0
 
         //Use thread-safe localtime_r
         localtime_r(&start_time_t, &start_tm);

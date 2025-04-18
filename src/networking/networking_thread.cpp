@@ -6,9 +6,7 @@
 #define ENCRYPTED_TAG (char)0x02
 #define UNENCRYPTED_TAG (char)0x01
 
-//std::string server_prikey;
 //Char array copy method similar to Java's System.arraycopy()
-
 void NetworkingThread::char_array_copy(const char* src, int src_pos, char* dest, int dest_pos, int len) {
     for(int i = dest_pos; i < dest_pos + len; i++) {
         dest[i] = src[i + src_pos - dest_pos];
@@ -16,7 +14,6 @@ void NetworkingThread::char_array_copy(const char* src, int src_pos, char* dest,
 }
 
 //Find the index of a character in a char array
-
 int NetworkingThread::find_char_index(char* char_array, int char_array_len, char ch) {
     for(int i = 0; i < char_array_len; i++) {
         if(char_array[i] == ch) {
@@ -41,7 +38,6 @@ std::string NetworkingThread::unpack_unencrypted_message(char* receive_buffer, i
 
 std::string NetworkingThread::unpack_encrypted_message(char* receive_buffer, int receive_len) {
     std::string message_cipher = unpack_unencrypted_message(receive_buffer, receive_len);
-    //std::cout << message_cipher <<std::endl;
     EVP_PKEY* server_prikey_loaded = RSAUtils::load_base64_der_server_prikey();
     std::string message_pt = RSAUtils::rsa_decrypt(server_prikey_loaded, message_cipher);
     
@@ -93,14 +89,14 @@ char* NetworkingThread::pack_message_encrypt(std::string message, int* packed_by
 std::string NetworkingThread::extract_command(std::string message_pt) {
     std::string result;
 
-    // 查找 '(' 的位置
+    //Find '('
     size_t pos = message_pt.find('(');
 
     if (pos != std::string::npos) {
-        // 如果找到了 '('，提取从开头到 '(' 之前的部分
+        //If found '(', extract the string from the beginning to '('
         result = message_pt.substr(0, pos);
     } else {
-        // 如果没有找到 '('，提取整个字符串
+        //If not found '(', return an empty string
         result = "";
     }
     return result;
@@ -109,16 +105,16 @@ std::string NetworkingThread::extract_command(std::string message_pt) {
 std::vector<std::string> NetworkingThread::extract_params(std::string message_pt) {
     std::vector<std::string> params;
 
-    // 查找 '(' 和 ')' 的位置
+    //Find '(' and ')'
     size_t startPos = message_pt.find('(');
     size_t endPos = message_pt.find(')');
 
-    // 检查是否找到了括号
+    //Check if a pair of parentheses is found
     if (startPos != std::string::npos && endPos != std::string::npos && startPos < endPos) {
-        // 提取括号之间的内容
+        //Extract the string between opening and closing brackets
         std::string content_between_braces = message_pt.substr(startPos + 1, endPos - startPos - 1);
 
-        // 使用 stringstream 按逗号分割
+        //Seperate by commas
         std::stringstream ss(content_between_braces);
         
         std::string item;
@@ -164,9 +160,6 @@ NetworkingThread::~NetworkingThread()
 }
 
 int NetworkingThread::networking_thread_main(bool* is_added, std::string server_id, server_info* server_information, hardware_thread_objects* hard_thread_objs) {    //pump_thread is a reference to the pointer pointing to PumpThread. This can pass the pointer by its address (the pointer of pointer).
-    //Read server id
-    //std::string server_id = ;
-    //std::string server_prikey = RSAUtils::read_key_from_file(false);
 
     while(true) {
     //int server_fd, client_socket;
@@ -176,7 +169,7 @@ int NetworkingThread::networking_thread_main(bool* is_added, std::string server_
     //const char* response = "Hello from server";
 
     
-    // 创建TCP套接字
+    //Create TCP socket
     if ((server_fd = socket(AF_INET, SOCK_STREAM, 0)) == 0) {
         perror("socket failed");
         //exit(EXIT_FAILURE);
@@ -191,29 +184,27 @@ int NetworkingThread::networking_thread_main(bool* is_added, std::string server_
         return -1;
     }
 
-    // 设置服务器地址和端口
+    //Set address and port of the server
     address.sin_family = AF_INET;
     address.sin_addr.s_addr = INADDR_ANY;
     address.sin_port = htons(8080);
 
-    // 绑定套接字到地址和端口
+    //Bind the socket
     if (bind(server_fd, (struct sockaddr*)&address, sizeof(address)) < 0) {
         perror("bind failed");
-        //exit(EXIT_FAILURE);
+        
         return -1;
     }
 
-    // 开始监听
+    //Start listening
     if (listen(server_fd, 3) < 0) {
         perror("listen");
-        //exit(EXIT_FAILURE);
         return -1;
     }
 
     std::cout << "Server listening on port 8080..." << std::endl;
-
     
-        // 接受客户端连接
+        //Accept client connection
         if ((client_socket = accept(server_fd, (struct sockaddr*)&address, (socklen_t*)&addrlen)) < 0) {
             perror("accept");
             //exit(EXIT_FAILURE);
@@ -222,19 +213,19 @@ int NetworkingThread::networking_thread_main(bool* is_added, std::string server_
 
         std::cout << "Client connected." << std::endl;
 
-        memset(receive_buffer, 0, sizeof(receive_buffer));  // 清空缓冲区
+        memset(receive_buffer, 0, sizeof(receive_buffer));  //Clear the buffer
         int receive_len = read(client_socket, receive_buffer, 1024);   //The data from client will be in buffer
         if (receive_len <= 0) {
             std::cout << "Client disconnected." << std::endl;
-            break;  // 客户端断开连接
+            break;  //Client disconnected
         }
         std::cout << "Networking: Message saved to buffer" << std::endl;
         //Process the data from buffer
         if(receive_buffer[0] == ENCRYPTED_TAG) {   //Encrypted message
-            std::cout << "Networking: Message is encrypted" <<std::endl;
+            //std::cout << "Networking: Message is encrypted" <<std::endl;
             std::string received_message = unpack_encrypted_message(receive_buffer, receive_len);
             std::string recv_command = extract_command(received_message);
-            std::cout << "Decrypted message:" << received_message << std::endl;
+            //std::cout << "Decrypted message:" << received_message << std::endl;
             if(recv_command == "del_device") {
                 //Begin delete device
                 if(*is_added == true) {
@@ -243,22 +234,12 @@ int NetworkingThread::networking_thread_main(bool* is_added, std::string server_
 
                     //Exit the pump control thread
                     delete hard_thread_objs->pump_thread_obj;
-                    //hard_thread_objs->pump_thread_obj = new PumpThread(watering_record_helper_ptr, adc_hardware_ptr);
-                    //hard_thread_objs->pump_thread_obj->create_thread(server_information);
 
                     //Exit the soil moisture thread
                     delete hard_thread_objs->soil_moisture_thread_obj;
-                    //hard_thread_objs->soil_moisture_thread_obj = new SoilMoistureThread(adc_hardware_ptr, watering_record_helper_ptr);
-                    //hard_thread_objs->soil_moisture_thread_obj->create_thread();
 
                     //Clear watering info
                     watering_record_helper_ptr->clear_record();
-
-                    //Clear keys
-                    //RSAUtils::write_key_to_file(true, "");
-                    //RSAUtils::write_key_to_file(false, "");
-                    //remove(SERVER_PUBKEY_FILE);
-                    //remove(SERVER_PRIKEY_FILE);
 
                     //Reply "finish_del_device_server()"
                     std::string sending_message = "finish_del_device_server()";
@@ -290,16 +271,11 @@ int NetworkingThread::networking_thread_main(bool* is_added, std::string server_
                 server_information->scheduled_time = new_scheduled_time;
 
                 //Restart the pump thread
-                // pump_thread_obj->stop_thread = true;
-                // pump_thread->join();
-                // delete pump_thread;
-                // pump_thread = nullptr;
                 delete hard_thread_objs->pump_thread_obj;
                 //hard_thread_objs->pump_thread_obj = nullptr;
 
                 hard_thread_objs->pump_thread_obj = new PumpThread(watering_record_helper_ptr, adc_hardware_ptr);
                 hard_thread_objs->pump_thread_obj->create_thread(server_information);
-                //pump_thread = new std::thread(pump_thread_obj->pump_thread_main, std::stod(water_amount), scheduled_freq, scheduled_time);
 
                 //Reply "finish_edit_server"
                 std::string sending_message = "finish_edit_server()";
@@ -309,7 +285,7 @@ int NetworkingThread::networking_thread_main(bool* is_added, std::string server_
                 //End edit mode
             } else if(recv_command == "watering_now"){
 
-                hard_thread_objs->pump_thread_obj->water_immediately = true;
+                hard_thread_objs->pump_thread_obj->water_immediately.store(true);
 
                 //Reply "watering_succeed"
                 std::string sending_message = "watering_succeed()";
@@ -349,8 +325,6 @@ int NetworkingThread::networking_thread_main(bool* is_added, std::string server_
                 //Encrypt the file
                 AESUtils::encrypt_file(server_id);
 
-
-
                 //Open the file to be sent
                 std::ifstream file("temp/watering_record_" + server_id + "_encrypted.db", std::ios::binary | std::ios::ate);
                 if (!file) {
@@ -361,63 +335,30 @@ int NetworkingThread::networking_thread_main(bool* is_added, std::string server_
                     //return -1;
                 }
 
-                // 获取文件大小
+                //Get the file size
                 file.seekg(0, std::ios::end);
                 std::streamsize fileSize = file.tellg();
                 file.seekg(0, std::ios::beg);
 
-                // 发送文件大小
+                //Send the file size
                 if (send(client_socket, &fileSize, sizeof(fileSize), 0) == -1) {
-                    std::cerr << "发送文件大小失败" << std::endl;
+                    std::cerr << "Failed to send the file size" << std::endl;
                     //return 1;
                 }
 
-                // 发送文件内容
+                //Send file content
                 char buffer[1024];
                 while (fileSize > 0) {
                     file.read(buffer, std::min<long>(fileSize, sizeof(buffer)));
                     std::streamsize bytesRead = file.gcount();
                     if (send(client_socket, buffer, bytesRead, 0) == -1) {
-                        std::cerr << "发送文件内容失败" << std::endl;
+                        std::cerr << "Failed to send the file content" << std::endl;
                         //return 1;
                     }
                     fileSize -= bytesRead;
                 }
 
                 file.close();
-                /*
-                // Get file size
-                std::streamsize fileSize = file.tellg();
-                file.seekg(0, std::ios::beg);
-
-                // Send file size to client
-                if (sendAll(client_socket, (char*)&fileSize, sizeof(fileSize)) == -1) {
-                    std::cerr << "Failed to send file size" << std::endl;
-                    file.close();
-                    //close(new_socket);
-                    //close(server_fd);
-                    //return -1;
-                }
-
-                // Send file content in chunks
-                char buffer[1024];
-                while (fileSize > 0) {
-                    int chunkSize = (fileSize > 1024) ? 1024 : fileSize;
-                    file.read(buffer, chunkSize);
-                    if (sendAll(client_socket, buffer, chunkSize) == -1) {
-                        std::cerr << "Failed to send file chunk" << std::endl;
-                        file.close();
-                        //close(new_socket);
-                        //close(server_fd);
-                        //return -1;
-                    }
-                    fileSize -= chunkSize;
-                }
-
-                file.close();
-                */
-
-
 
             } else if(recv_command == "del_stat"){  //Delete all data
                 watering_record_helper_ptr->clear_record();
@@ -546,10 +487,9 @@ int NetworkingThread::networking_thread_main(bool* is_added, std::string server_
                     //Start pump control thread and soil moisture thread
                     hard_thread_objs->pump_thread_obj = new PumpThread(watering_record_helper_ptr, adc_hardware_ptr);
                     hard_thread_objs->pump_thread_obj->create_thread(server_information);
-                    //pump_thread = new std::thread(pump_thread_obj->pump_thread_main, std::stod(water_amount), scheduled_freq, scheduled_time);
+
                     hard_thread_objs->soil_moisture_thread_obj = new SoilMoistureThread(adc_hardware_ptr, watering_record_helper_ptr);
                     hard_thread_objs->soil_moisture_thread_obj->create_thread();
-                    //soil_moisture_thread = new std::thread(soil_moisture_thread_obj->soil_moisture_thread_main);
 
                 } else {
                     //Error: device already added
@@ -562,17 +502,11 @@ int NetworkingThread::networking_thread_main(bool* is_added, std::string server_
             //Error: invalid message
         }
 
-        // 向客户端发送响应
-        //send(client_socket, response, strlen(response), 0);
-        //std::cout << "Response sent to client." << std::endl;
+        //Close the socket
         close(client_socket);
         close(server_fd);
     }
-
-    // 关闭套接字
     
-    
-
     return 0;
 }
 

@@ -4,7 +4,6 @@
 #include "hardware_control/pump_thread.hpp"
 #include "hardware_control/adc_hardware.hpp"
 #include "hardware_control/soil_moisture_thread.hpp"
-
 #include "database/sqlite_database.hpp"
 #include "database/server_info_database_helper.hpp"
 #include "database/watering_record_helper.hpp"

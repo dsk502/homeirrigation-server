@@ -10,9 +10,8 @@
 
 class SoilMoistureThread {
 public:
-    bool stop_thread = false;
-    std::thread* th;
-
+    
+    
     SoilMoistureThread(ADCHardware* adc_hardware, WateringRecordHelper* watering_record_helper);
     void create_thread();
     ~SoilMoistureThread();
@@ -21,6 +20,10 @@ public:
 private:
     ADCHardware* adc_hardware_ptr;
     WateringRecordHelper* watering_record_helper_ptr;
+
+    bool stop_thread = false;
+    
+    std::thread* th;
 };
 
 #endif

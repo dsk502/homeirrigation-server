@@ -17,7 +17,9 @@ int ServerInfoDatabaseHelper::create_table_if_not_exist() {
         "mode INTEGER, water_amount REAL, "
         "scheduled_freq INTEGER, scheduled_time TEXT"
         ");";
+    server_info_mtx.lock();
     m_sqlite_database->exec(create_server_info_sql);
+    server_info_mtx.unlock();
     return 0;
 }
 
@@ -32,7 +34,9 @@ int ServerInfoDatabaseHelper::record_num() {
 //Insert a record
 int ServerInfoDatabaseHelper::insert_record(std::string client_id, std::string client_pubkey, std::string client_add_time, std::string mode, std::string water_amount, std::string scheduled_freq, std::string scheduled_time) {
     std::string insert_sql = "INSERT INTO server_info (client_id, client_pubkey, client_add_time, mode, water_amount, scheduled_freq, scheduled_time) VALUES ('" + client_id + "', '" + client_pubkey + "', " + client_add_time + ", " + mode + ", " + water_amount + ", " + scheduled_freq + ", '" + scheduled_time + "');";
+    server_info_mtx.lock();
     bool succeed = m_sqlite_database->exec(insert_sql);
+    server_info_mtx.unlock();
     if(succeed) {
         return 0;
     } else {
@@ -44,7 +48,10 @@ int ServerInfoDatabaseHelper::insert_record(std::string client_id, std::string c
 int ServerInfoDatabaseHelper::update_mode(std::string new_mode, std::string new_water_amount, std::string new_scheduled_freq, std::string new_scheduled_time) {
     if(record_num() == 1) {
         std::string update_sql = "UPDATE server_info SET mode = " + new_mode + ", water_amount = " + new_water_amount + ", scheduled_freq = " + new_scheduled_freq + ", scheduled_time = '" + new_scheduled_time + "';";
-        if(m_sqlite_database->exec(update_sql)) {
+        server_info_mtx.lock();
+        bool update_result = m_sqlite_database->exec(update_sql);
+        server_info_mtx.unlock();
+        if(update_result) {
             return 0;
         } else {
             return 1;
@@ -74,5 +81,7 @@ struct server_info* ServerInfoDatabaseHelper::get_server_info() {
 //Clear server info
 void ServerInfoDatabaseHelper::clear_server_info() {
     std::string clear_server_info_sql = "DELETE FROM server_info;";
+    server_info_mtx.lock();
     m_sqlite_database->exec(clear_server_info_sql);
+    server_info_mtx.unlock();
 }
