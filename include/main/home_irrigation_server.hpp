@@ -34,10 +34,6 @@ public:
     //Database helpers
     ServerInfoDatabaseHelper* m_server_info_database_helper;
     WateringRecordHelper* m_watering_record_helper;
-
-    //Server keys
-    //std::string m_server_pubkey;
-    //std::string m_server_prikey;
     
     //Server info
     server_info* m_server_info;
@@ -45,11 +41,6 @@ public:
     //Thread class objects
     hardware_thread_objects* m_hard_thread_objs;
     NetworkingThread* m_net_thread_obj;
-
-    //Thread variables
-    //std::thread* m_pump_thread;
-    //std::thread* m_soil_moisture_thread;
-    //std::thread* m_net_thread;
 
     int server_init();
 

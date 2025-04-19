@@ -83,7 +83,6 @@ char* NetworkingThread::pack_message_encrypt(std::string message, int* packed_by
     //Return result
     *packed_bytes_len_ret = packed_bytes_len;
     return packed_bytes;
-    //return pack_message_no_encrypt(encrypted_message, packed_bytes_len_ret);
 }
 
 std::string NetworkingThread::extract_command(std::string message_pt) {
@@ -126,17 +125,6 @@ std::vector<std::string> NetworkingThread::extract_params(std::string message_pt
     return params;
 }
 
-// Ensure all data is sent
-int NetworkingThread::sendAll(int sock, const char* buf, int len) {
-    int total = 0;
-    while (total < len) {
-        int sent = send(sock, buf + total, len - total, 0);
-        if (sent == -1) return -1;
-        total += sent;
-    }
-    return total;
-}
-
 NetworkingThread::NetworkingThread(ServerInfoDatabaseHelper* server_info_db_helper, WateringRecordHelper* watering_record_helper, ADCHardware* adc_hardware) {
     this->server_info_db_helper_ptr = server_info_db_helper;
     this->watering_record_helper_ptr = watering_record_helper;
@@ -171,8 +159,7 @@ int NetworkingThread::networking_thread_main(bool* is_added, std::string server_
         
         //Create TCP socket
         if ((server_fd = socket(AF_INET, SOCK_STREAM, 0)) == 0) {
-            perror("socket failed");
-            //exit(EXIT_FAILURE);
+            perror("socket failed");  
             return -1;
         }
 
@@ -180,7 +167,6 @@ int NetworkingThread::networking_thread_main(bool* is_added, std::string server_
         int opt = 1;
         if (setsockopt(server_fd, SOL_SOCKET, SO_REUSEADDR | SO_REUSEPORT, &opt, sizeof(opt))) {
             perror("Setsockopt failed");
-            //exit(EXIT_FAILURE);
             return -1;
         }
 
@@ -192,7 +178,6 @@ int NetworkingThread::networking_thread_main(bool* is_added, std::string server_
         //Bind the socket
         if (bind(server_fd, (struct sockaddr*)&address, sizeof(address)) < 0) {
             perror("bind failed");
-            
             return -1;
         }
 
@@ -207,7 +192,6 @@ int NetworkingThread::networking_thread_main(bool* is_added, std::string server_
         //Accept client connection
         if ((client_socket = accept(server_fd, (struct sockaddr*)&address, (socklen_t*)&addrlen)) < 0) {
             perror("accept");
-            //exit(EXIT_FAILURE);
             return -1;
         }
 
@@ -328,9 +312,6 @@ int NetworkingThread::networking_thread_main(bool* is_added, std::string server_
                 if (!file) {
                     std::cerr << "Failed to open file" << std::endl;
                     continue;
-                    //close(new_socket);
-                    //close(server_fd);
-                    //return -1;
                 }
 
                 //Get the file size
@@ -390,11 +371,6 @@ int NetworkingThread::networking_thread_main(bool* is_added, std::string server_
 
                     //Load the server public key
                     std::string server_pubkey = RSAUtils::read_key_from_file(true);
-                    /*
-                    if(!RSAUtils::is_keypair_exist()) {
-                        RSAUtils::generate_der_base64_key_pair();
-                    }
-                    */
 
                     //Reply "key_exchange_server(server_pubkey)"                   
                     std::string sending_message = "key_exchange_server(" + server_pubkey + ")";
