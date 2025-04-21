@@ -233,6 +233,7 @@ int NetworkingThread::networking_thread_main(bool* is_added, std::string server_
                     
                     *is_added = false;
                     std::cout << "Device Deleted" <<std::endl;
+                    delete sending_bytes;
                 } else {
                     //Error
                 }
@@ -264,6 +265,7 @@ int NetworkingThread::networking_thread_main(bool* is_added, std::string server_
                 int sending_bytes_len;
                 char* sending_bytes = pack_message_encrypt(sending_message, &sending_bytes_len, server_information->client_pubkey);
                 send(client_socket, sending_bytes, sending_bytes_len, 0);
+                delete sending_bytes;
                 //End edit mode
             } else if(recv_command == "watering_now"){
 
@@ -274,7 +276,7 @@ int NetworkingThread::networking_thread_main(bool* is_added, std::string server_
                 int sending_bytes_len;
                 char* sending_bytes = pack_message_encrypt(sending_message, &sending_bytes_len, server_information->client_pubkey);
                 send(client_socket, sending_bytes, sending_bytes_len, 0);
-
+                delete sending_bytes;
             } else if(recv_command == "download_stat"){
                 //Send the watering_record database file to the client
 
@@ -291,6 +293,7 @@ int NetworkingThread::networking_thread_main(bool* is_added, std::string server_
                 int sending_bytes_len;
                 char* sending_bytes = pack_message_encrypt(sending_message, &sending_bytes_len, server_information->client_pubkey);
                 send(client_socket, sending_bytes, sending_bytes_len, 0);
+                delete sending_bytes;
 
                 //Receive "stat_key_ok"
                 memset(receive_buffer, 0, sizeof(receive_buffer));
@@ -347,6 +350,7 @@ int NetworkingThread::networking_thread_main(bool* is_added, std::string server_
                 int sending_bytes_len;
                 char* sending_bytes = pack_message_encrypt(sending_message, &sending_bytes_len, server_information->client_pubkey);
                 send(client_socket, sending_bytes, sending_bytes_len, 0);
+                delete sending_bytes;
             } else {
                 //Error: invalid message
             }
@@ -377,7 +381,7 @@ int NetworkingThread::networking_thread_main(bool* is_added, std::string server_
                     int sending_bytes_len = 0;                   
                     char* sending_bytes = pack_message_no_encrypt(sending_message, &sending_bytes_len);                  
                     send(client_socket, sending_bytes, sending_bytes_len, 0);
-
+                    delete sending_bytes;
                     std::cout << "Add device: send server pubkey " + server_pubkey <<std::endl;
                     
                     //Receive "key_exchange_client(client_pubkey)"
@@ -401,7 +405,7 @@ int NetworkingThread::networking_thread_main(bool* is_added, std::string server_
                     sending_message = "request_add_param(" + server_id + ")";    
                     sending_bytes = pack_message_encrypt(sending_message, &sending_bytes_len, client_pubkey);
                     send(client_socket, sending_bytes, sending_bytes_len, 0);
-
+                    delete sending_bytes;
                     std::cout << "Replied request_add_param" <<std::endl;
 
                     //Receive "reply_add_param(mode, water_amount, scheduled_freq, scheduled_time)"
@@ -430,7 +434,8 @@ int NetworkingThread::networking_thread_main(bool* is_added, std::string server_
                     sending_message = "finish_add_server()";
                     sending_bytes = pack_message_encrypt(sending_message, &sending_bytes_len, client_pubkey);
                     send(client_socket, sending_bytes, sending_bytes_len, 0);
-
+                    delete sending_bytes;
+                    
                     //Receive "finish_add_client()"
                     memset(receive_buffer, 0, sizeof(receive_buffer));
                     receive_len = read(client_socket, receive_buffer, 1024);
