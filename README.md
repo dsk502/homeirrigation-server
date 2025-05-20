@@ -13,4 +13,4 @@ sudo apt install openssl libssl-dev<br>
 sudo apt install sqlite3<br>
 
 ## How to compile and run
-In this directory, execute "make", and after the make process finished, go to bin directory, and run home_irrigation_server executable file as root.<br>
+In this directory, execute "make", and after the make process finished, go to bin directory (use the command "cd bin"), and run home_irrigation_server executable file as root.<br>
